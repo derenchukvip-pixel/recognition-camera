@@ -1,0 +1,6 @@
+app_identifier("com.olegpiruyan.gchain") # The bundle identifier of your app
+apple_id("PFET82JSP5") # Your Apple Developer Portal username
+
+
+# For more information about the Appfile, see:
+#     https://docs.fastlane.tools/advanced/#appfile
