@@ -2,6 +2,6 @@ fastapi
 uvicorn
 pillow
 python-dotenv
-openai
+openai==0.28
 python-multipart
 
