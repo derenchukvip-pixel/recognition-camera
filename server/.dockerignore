@@ -1,0 +1,12 @@
+# Исключаем тяжелые и ненужные для деплоя файлы и папки
+*.pt
+*.onnx
+*.npy
+build/
+datasets/
+saved_model/
+yolov8n_saved_model/
+assets/
+runs/
+.DS_Store
+.env
