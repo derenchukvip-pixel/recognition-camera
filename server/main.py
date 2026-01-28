@@ -9,6 +9,7 @@ import base64
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
+print("App started")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
