@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'presentation/camera/camera_screen.dart';
-import 'ui/yolo_detection_screen.dart';
+import 'ui/detection_screen.dart';
 
 void main() {
   runApp(const RecognitionCameraApp());
@@ -18,7 +17,7 @@ class RecognitionCameraApp extends StatelessWidget {
         primarySwatch: Colors.green,
         useMaterial3: true,
       ),
-      home: const YoloDetectionScreen(),
+  home: const DetectionScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
