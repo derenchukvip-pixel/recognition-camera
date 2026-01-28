@@ -1,3 +1,9 @@
+check_models.py
+server.py
+yolov8n.pt
+.env
+.DS_Store
+runs/
 
 # Максимально строгий .dockerignore для деплоя FastAPI
 *.pt
