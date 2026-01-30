@@ -23,5 +23,6 @@ void main() {
     expect(viewModel.status, DetectionStatus.success);
     expect(viewModel.resultText, 'ok');
     expect(viewModel.errorMessage, isNull);
+    expect(viewModel.lastDurationMs, isNotNull);
   });
 }

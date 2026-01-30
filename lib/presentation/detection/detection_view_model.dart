@@ -56,8 +56,14 @@ class DetectionViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final stopwatch = Stopwatch()..start();
       final RecognitionResult result =
           await _recognitionApi.analyzeImage(_imageFile!);
+      stopwatch.stop();
+      final durationMessage =
+          'SendToServer duration: ${stopwatch.elapsedMilliseconds} ms';
+      print(durationMessage);
+      debugPrint(durationMessage);
       _resultText = result.message;
       _status = DetectionStatus.success;
     } catch (error) {
