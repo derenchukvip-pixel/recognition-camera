@@ -168,7 +168,7 @@ async def analyze(file: UploadFile = File(...)):
         )
         result = response.choices[0].message["content"]
         _set_cached_response(cache_key, result)
-    _set_phash_cached_response(phash_value, result)
+        _set_phash_cached_response(phash_value, result)
         duration_ms = (time.perf_counter() - start_time) * 1000
         logger.info("request=complete source=openai duration_ms=%.2f", duration_ms)
     except Exception as e:
