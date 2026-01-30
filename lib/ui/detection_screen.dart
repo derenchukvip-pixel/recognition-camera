@@ -42,11 +42,8 @@ class _DetectionScreenState extends State<DetectionScreen> {
     if (_imageFile == null) return;
   setState(() { _loading = true; _result = null; _animatedResult = ''; });
     try {
-      // Try to get server IP from environment (for debug/dev), fallback to current known IP, fallback to localhost
-      const defaultIp = '10.1.11.26';
-      const defaultPort = '8000';
-      String serverIp = const String.fromEnvironment('SERVER_IP', defaultValue: defaultIp);
-      var uri = Uri.parse('http://$serverIp:$defaultPort/analyze/');
+  // Используем публичный Railway-URL
+  var uri = Uri.parse('https://recognition-camera-production.up.railway.app/analyze/');
       var request = http.MultipartRequest('POST', uri);
       request.files.add(await http.MultipartFile.fromPath('file', _imageFile!.path));
       var response = await request.send();
@@ -61,10 +58,10 @@ class _DetectionScreenState extends State<DetectionScreen> {
           this._animateResultText(respStr);
         }
       } else {
-        setState(() { _result = 'Ошибка: ${response.statusCode}'; _animatedResult = 'Ошибка: ${response.statusCode}'; });
+        setState(() { _result = 'Error: ${response.statusCode}'; _animatedResult = 'Error: ${response.statusCode}'; });
       }
     } catch (e) {
-      setState(() { _result = 'Ошибка: ${e.toString()}'; _animatedResult = 'Ошибка: ${e.toString()}'; });
+      setState(() { _result = 'Error: ${e.toString()}'; _animatedResult = 'Error: ${e.toString()}'; });
     } finally {
       setState(() { _loading = false; });
     }

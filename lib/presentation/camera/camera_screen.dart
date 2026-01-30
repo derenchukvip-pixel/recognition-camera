@@ -2,9 +2,9 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import '../../data/ai/on_device_ai_service.dart';
-import 'package:recognition_camera/presentation/barcode/barcode_scanner_screen.dart';
-import 'package:recognition_camera/data/open_food_facts_service.dart';
-import 'package:recognition_camera/presentation/product/product_info_screen.dart';
+import '../../data/open_food_facts/open_food_facts_api.dart';
+import '../barcode/barcode_scanner_screen.dart';
+import '../product/product_info_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -16,10 +16,10 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   String? _errorMessage;
   final OnDeviceAIService _aiService = OnDeviceAIService();
+  final OpenFoodFactsApi _openFoodFactsApi = OpenFoodFactsApi();
   CameraController? _controller;
   List<CameraDescription>? _cameras;
   bool _isInitialized = false;
-  XFile? _capturedImage;
 
   @override
   void initState() {
@@ -29,7 +29,6 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> _initCamera() async {
     try {
-      WidgetsFlutterBinding.ensureInitialized();
       _cameras = await availableCameras();
       if (_cameras != null && _cameras!.isNotEmpty) {
         _controller = CameraController(
@@ -56,9 +55,6 @@ class _CameraScreenState extends State<CameraScreen> {
   Future<void> _captureImage() async {
     if (_controller != null && _controller!.value.isInitialized) {
       final image = await _controller!.takePicture();
-      setState(() {
-        _capturedImage = image;
-      });
       _showResultDialog(image);
     }
   }
@@ -103,9 +99,6 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
             TextButton(
               onPressed: () {
-                setState(() {
-                  _capturedImage = null;
-                });
                 Navigator.of(context).pop();
               },
               child: const Text('Retake'),
@@ -169,9 +162,11 @@ class _CameraScreenState extends State<CameraScreen> {
                       showDialog(
                         context: context,
                         barrierDismissible: false,
-                        builder: (_) => const Center(child: CircularProgressIndicator()),
+                        builder: (_) =>
+                            const Center(child: CircularProgressIndicator()),
                       );
-                      final product = await OpenFoodFactsService.fetchProduct(barcode);
+                      final product =
+                          await _openFoodFactsApi.fetchProduct(barcode);
                       Navigator.of(context).pop(); // remove loading dialog
                       if (product != null) {
                         Navigator.of(context).push(
@@ -181,7 +176,8 @@ class _CameraScreenState extends State<CameraScreen> {
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Product not found: $barcode')),
+                          SnackBar(
+                              content: Text('Product not found: $barcode')),
                         );
                       }
                     }

@@ -14,7 +14,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   void _onDetect(BarcodeCapture capture) {
     if (_isProcessing) return;
-    final barcode = capture.barcodes.firstOrNull?.rawValue;
+    final barcode =
+        capture.barcodes.isNotEmpty ? capture.barcodes.first.rawValue : null;
     if (barcode != null) {
       setState(() {
         _isProcessing = true;
@@ -33,7 +34,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-  appBar: AppBar(title: const Text('Scan Barcode')),
+      appBar: AppBar(title: const Text('Scan Barcode')),
       body: Stack(
         children: [
           MobileScanner(

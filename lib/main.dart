@@ -1,6 +1,5 @@
-
 import 'package:flutter/material.dart';
-import 'ui/detection_screen.dart';
+import 'presentation/detection/detection_screen.dart';
 
 void main() {
   runApp(const RecognitionCameraApp());
@@ -12,15 +11,13 @@ class RecognitionCameraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Осознанное потребление',
+      title: 'Conscious consumption',
       theme: ThemeData(
         primarySwatch: Colors.green,
         useMaterial3: true,
       ),
-  home: const DetectionScreen(),
+      home: const DetectionScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
-
-
