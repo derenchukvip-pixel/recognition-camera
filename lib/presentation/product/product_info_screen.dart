@@ -19,13 +19,20 @@ class ProductInfoScreen extends StatelessWidget {
           children: [
             if (imageUrl != null)
               Center(
-                child: Image.network(imageUrl, height: 180),
+                child: Image.network(
+                  imageUrl,
+                  height: 180,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.image_not_supported, size: 64);
+                  },
+                ),
               ),
             const SizedBox(height: 16),
             Text('Brands: $brands'),
             const SizedBox(height: 16),
             if (nutriments != null) ...[
-              Text('Nutrition per 100g:', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text('Nutrition per 100g:',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               if (nutriments['energy-kcal_100g'] != null)
                 Text('Calories: ${nutriments['energy-kcal_100g']} kcal'),
               if (nutriments['fat_100g'] != null)

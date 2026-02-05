@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import '../../core/error/app_error.dart';
 import '../../data/ai/on_device_ai_service.dart';
 import '../../data/open_food_facts/open_food_facts_api.dart';
 import '../barcode/barcode_scanner_screen.dart';
@@ -165,19 +166,30 @@ class _CameraScreenState extends State<CameraScreen> {
                         builder: (_) =>
                             const Center(child: CircularProgressIndicator()),
                       );
-                      final product =
-                          await _openFoodFactsApi.fetchProduct(barcode);
-                      Navigator.of(context).pop(); // remove loading dialog
-                      if (product != null) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ProductInfoScreen(product: product),
-                          ),
-                        );
-                      } else {
+                      try {
+                        final product =
+                            await _openFoodFactsApi.fetchProduct(barcode);
+                        if (!mounted) return;
+                        Navigator.of(context).pop(); // remove loading dialog
+                        if (product != null) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ProductInfoScreen(product: product),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Product not found: $barcode'),
+                            ),
+                          );
+                        }
+                      } catch (error) {
+                        if (!mounted) return;
+                        Navigator.of(context).pop(); // remove loading dialog
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text('Product not found: $barcode')),
+                          SnackBar(content: Text(mapToUserMessage(error))),
                         );
                       }
                     }
