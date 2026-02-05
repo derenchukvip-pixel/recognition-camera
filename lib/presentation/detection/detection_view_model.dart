@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/error/app_error.dart';
 import '../../data/recognition/recognition_api.dart';
 import '../../domain/models/recognition_result.dart';
 
@@ -22,11 +23,13 @@ class DetectionViewModel extends ChangeNotifier {
   File? _imageFile;
   String? _resultText;
   String? _errorMessage;
+  int? _lastDurationMs;
 
   DetectionStatus get status => _status;
   File? get imageFile => _imageFile;
   String? get resultText => _resultText;
   String? get errorMessage => _errorMessage;
+  int? get lastDurationMs => _lastDurationMs;
   bool get isLoading => _status == DetectionStatus.analyzing;
   bool get hasImage => _imageFile != null;
 
@@ -36,6 +39,7 @@ class DetectionViewModel extends ChangeNotifier {
     _imageFile = File(pickedFile.path);
     _resultText = null;
     _errorMessage = null;
+    _lastDurationMs = null;
     _status = DetectionStatus.imageReady;
     notifyListeners();
   }
@@ -44,6 +48,7 @@ class DetectionViewModel extends ChangeNotifier {
     _imageFile = file;
     _resultText = null;
     _errorMessage = null;
+    _lastDurationMs = null;
     _status = DetectionStatus.imageReady;
     notifyListeners();
   }
@@ -53,6 +58,7 @@ class DetectionViewModel extends ChangeNotifier {
     _status = DetectionStatus.analyzing;
     _resultText = null;
     _errorMessage = null;
+    _lastDurationMs = null;
     notifyListeners();
 
     try {
@@ -64,10 +70,11 @@ class DetectionViewModel extends ChangeNotifier {
           'SendToServer duration: ${stopwatch.elapsedMilliseconds} ms';
       print(durationMessage);
       debugPrint(durationMessage);
+      _lastDurationMs = stopwatch.elapsedMilliseconds;
       _resultText = result.message;
       _status = DetectionStatus.success;
     } catch (error) {
-      _errorMessage = 'Failed to analyze image: ${error.toString()}';
+      _errorMessage = mapToUserMessage(error);
       _status = DetectionStatus.failure;
       if (kDebugMode) {
         debugPrint('Detection error: $error');
@@ -81,6 +88,7 @@ class DetectionViewModel extends ChangeNotifier {
     _imageFile = null;
     _resultText = null;
     _errorMessage = null;
+    _lastDurationMs = null;
     _status = DetectionStatus.idle;
     notifyListeners();
   }

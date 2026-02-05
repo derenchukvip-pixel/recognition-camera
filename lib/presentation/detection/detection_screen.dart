@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/recognition/recognition_api_dio.dart';
+import '../../core/consent/disclaimer_storage.dart';
+import '../camera/camera_capture_screen.dart';
 import 'detection_view_model.dart';
 
 class DetectionScreen extends StatefulWidget {
@@ -13,17 +18,62 @@ class DetectionScreen extends StatefulWidget {
 
 class _DetectionScreenState extends State<DetectionScreen> {
   late final DetectionViewModel _viewModel;
+  final DisclaimerStorage _disclaimerStorage = DisclaimerStorage();
 
   @override
   void initState() {
     super.initState();
     _viewModel = DetectionViewModel(recognitionApi: RecognitionApiDio());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showDisclaimerIfNeeded();
+    });
   }
 
   @override
   void dispose() {
     _viewModel.dispose();
     super.dispose();
+  }
+
+  Future<void> _showDisclaimerIfNeeded() async {
+    final bool accepted = await _disclaimerStorage.isAccepted();
+    if (!mounted || accepted) return;
+
+    final bool? userAccepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Important notice'),
+          content: const Text(
+            'This app uses real-world data and models that may contain '
+            'inaccuracies. Use the results as reference information and '
+            'verify important data independently.\n\n'
+            'By tapping “Agree”, you confirm that you understand these '
+            'limitations.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Disagree'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Agree'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (userAccepted == true) {
+      await _disclaimerStorage.setAccepted(true);
+      return;
+    }
+
+    await _disclaimerStorage.setAccepted(false);
+    if (!mounted) return;
+    SystemNavigator.pop();
   }
 
   @override
@@ -37,6 +87,20 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
 class _DetectionScreenView extends StatelessWidget {
   const _DetectionScreenView();
+
+  Future<void> _openCamera(
+    BuildContext context,
+    DetectionViewModel viewModel,
+  ) async {
+    final capturedFile = await Navigator.of(context).push<File>(
+      MaterialPageRoute(
+        builder: (_) => const CameraCaptureScreen(),
+      ),
+    );
+    if (capturedFile != null) {
+      viewModel.setImage(capturedFile);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +118,9 @@ class _DetectionScreenView extends StatelessWidget {
                 Image.file(viewModel.imageFile!, height: 200),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: viewModel.isLoading ? null : viewModel.pickImage,
+                onPressed: viewModel.isLoading
+                    ? null
+                    : () => _openCamera(context, viewModel),
                 child: const Text('Add photo'),
               ),
               const SizedBox(height: 16),
