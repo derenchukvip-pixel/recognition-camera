@@ -5,16 +5,27 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:recognition_camera/main.dart';
 
 void main() {
-  testWidgets('App starts on recognition screen', (WidgetTester tester) async {
+  testWidgets('App starts on splash screen then shows terms', (WidgetTester tester) async {
     await tester.pumpWidget(const RecognitionCameraApp());
-    await tester.pumpAndSettle();
+    expect(find.text('WerWo'), findsOneWidget);
+    expect(find.text('Know the origin.\nUnderstand the impact.'), findsOneWidget);
 
-    expect(find.text('Recognition Camera'), findsOneWidget);
-    expect(find.text('Add photo'), findsOneWidget);
+  await tester.pump(const Duration(milliseconds: 2300));
+    await tester.pumpAndSettle();
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is RichText &&
+            widget.maxLines == 2 &&
+            widget.text.toPlainText().contains('Terms of Use'),
+      ),
+      findsOneWidget,
+    );
   });
 }

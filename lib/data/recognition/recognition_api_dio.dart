@@ -36,8 +36,8 @@ class RecognitionApiDio implements RecognitionApi {
       }
       if (data is Map<String, dynamic>) {
         final resultText = data['result']?.toString() ?? jsonEncode(data);
-        return RecognitionResult(
-          message: resultText,
+        return RecognitionResult.fromResponse(
+          resultText,
           rawResponse: jsonEncode(data),
         );
       }
