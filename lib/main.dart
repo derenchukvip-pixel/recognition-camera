@@ -2,9 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'presentation/detection/detection_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'presentation/splash/splash_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  await Future.wait([
+    Hive.openBox('saved_products'),
+    Hive.openBox('history_items'),
+  ]);
+
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
   };
@@ -25,13 +33,7 @@ void main() {
     );
   };
 
-  runZonedGuarded(() {
-    runApp(const RecognitionCameraApp());
-  }, (error, stackTrace) {
-    if (kDebugMode) {
-      debugPrint('Unhandled error: $error');
-    }
-  });
+  runApp(const RecognitionCameraApp());
 }
 
 class RecognitionCameraApp extends StatelessWidget {
@@ -44,8 +46,9 @@ class RecognitionCameraApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.green,
         useMaterial3: true,
+        fontFamily: 'Helvetica Neue',
       ),
-      home: const DetectionScreen(),
+      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

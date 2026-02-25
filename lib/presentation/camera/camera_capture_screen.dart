@@ -13,38 +13,17 @@ class CameraCaptureScreen extends StatefulWidget {
 
 class _CameraCaptureScreenState extends State<CameraCaptureScreen>
     with TickerProviderStateMixin {
+  static const Color _accentBlue = Color(0xFF1A497F);
   CameraController? _controller;
   CameraDescription? _backCamera;
-  CameraDescription? _frontCamera;
-  CameraDescription? _activeCamera;
   bool _isInitializing = true;
   bool _isCapturing = false;
   String? _errorMessage;
   bool _flashOn = false;
-  late final AnimationController _framePulseController;
-  late final AnimationController _frameFlashController;
-  late final Animation<double> _framePulse;
-  late final Animation<double> _frameFlash;
 
   @override
   void initState() {
     super.initState();
-    _framePulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
-    _frameFlashController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _framePulse = CurvedAnimation(
-      parent: _framePulseController,
-      curve: Curves.easeInOut,
-    ).drive(Tween(begin: 0.15, end: 0.55));
-    _frameFlash = CurvedAnimation(
-      parent: _frameFlashController,
-      curve: Curves.easeOutCubic,
-    ).drive(Tween(begin: 0.0, end: 1.0));
     _initCamera();
   }
 
@@ -63,11 +42,6 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
         (camera) => camera.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
-      _frontCamera = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => _backCamera!,
-      );
-
       await _startController(_backCamera!);
     } catch (error) {
       if (!mounted) return;
@@ -86,12 +60,14 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
     }
     final controller = CameraController(
       description,
-      ResolutionPreset.high,
+      ResolutionPreset.medium,
       enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.jpeg,
     );
     await controller.initialize();
     await controller.setFlashMode(FlashMode.off);
     await _resetZoom(controller);
+    await _warmUpCapture(controller);
 
     if (!mounted) {
       await controller.dispose();
@@ -100,24 +76,25 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
     setState(() {
       _controller?.dispose();
       _controller = controller;
-      _activeCamera = description;
       _flashOn = false;
       _isInitializing = false;
     });
   }
 
-  Future<void> _switchCamera() async {
-    if (_isInitializing || _isCapturing) return;
-    if (_backCamera == null || _frontCamera == null) return;
-    if (_backCamera == _frontCamera) return;
-    final nextCamera = _activeCamera?.lensDirection == CameraLensDirection.front
-        ? _backCamera
-        : _frontCamera;
-    setState(() {
-      _isInitializing = true;
-    });
-    await HapticFeedback.selectionClick();
-    await _startController(nextCamera!);
+  Future<void> _warmUpCapture(CameraController controller) async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (!controller.value.isInitialized || controller.value.isTakingPicture) {
+        return;
+      }
+      final file = await controller.takePicture();
+      final tempFile = File(file.path);
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+    } catch (_) {
+      // Ignore warm-up errors; user capture will still work normally.
+    }
   }
 
   Future<void> _resetZoom(CameraController controller) async {
@@ -156,7 +133,6 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
       _isCapturing = true;
     });
     await HapticFeedback.mediumImpact();
-    _frameFlashController.forward(from: 0);
 
     try {
       final image = await _controller!.takePicture();
@@ -175,8 +151,6 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
 
   @override
   void dispose() {
-    _framePulseController.dispose();
-    _frameFlashController.dispose();
     _controller?.dispose();
     super.dispose();
   }
@@ -187,11 +161,6 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('Camera'),
-        backgroundColor: Colors.black.withOpacity(0.4),
-        foregroundColor: Colors.white,
-      ),
       body: _buildBody(theme),
     );
   }
@@ -211,59 +180,59 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
     }
 
     if (_isInitializing || _controller == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(
+          color: _accentBlue,
+          strokeWidth: 3,
+        ),
+      );
     }
 
+    final controller = _controller!;
     return Stack(
       children: [
-        Positioned.fill(child: CameraPreview(_controller!)),
-        Positioned.fill(child: _GradientOverlay()),
         Positioned.fill(
-          child: AnimatedBuilder(
-            animation: Listenable.merge([
-              _framePulseController,
-              _frameFlashController,
-            ]),
-            builder: (context, child) {
-              return _CameraFrameOverlay(
-                pulse: _framePulse.value,
-                flash: _frameFlash.value,
-              );
-            },
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: controller.value.aspectRatio,
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: controller.value.previewSize?.height ?? 1,
+                  height: controller.value.previewSize?.width ?? 1,
+                  child: CameraPreview(controller),
+                ),
+              ),
+            ),
           ),
         ),
+        const Positioned.fill(child: _GridOverlay()),
         Positioned(
-          top: 16,
+          top: 44,
           left: 16,
           right: 16,
-          child: _CameraTopBar(
-            isFlashOn: _flashOn,
-            canSwitch: _backCamera != null && _frontCamera != null,
-            onFlashToggle: _toggleFlash,
-            onSwitchCamera: _switchCamera,
+          child: SafeArea(
+            bottom: false,
+            child: _CameraTopBar(
+              isFlashOn: _flashOn,
+              onFlashToggle: _toggleFlash,
+            ),
           ),
         ),
         Positioned(
           left: 0,
           right: 0,
-          bottom: 32,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Align the product inside the frame',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _CaptureButton(
+          bottom: 0,
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: _CaptureButton(
                 isCapturing: _isCapturing,
-                accentColor: theme.colorScheme.primary,
+                accentColor: _accentBlue,
                 onTap: _isCapturing ? null : _capture,
               ),
-            ],
+            ),
           ),
         ),
       ],
@@ -271,151 +240,103 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
   }
 }
 
-class _CameraFrameOverlay extends StatelessWidget {
-  const _CameraFrameOverlay({
-    required this.pulse,
-    required this.flash,
-  });
+class _GridOverlay extends StatelessWidget {
+  const _GridOverlay();
 
-  final double pulse;
-  final double flash;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final frameWidth = constraints.maxWidth * 0.76;
-        final frameHeight = constraints.maxHeight * 0.42;
-        final glowStrength = (pulse + flash).clamp(0.0, 1.0);
-
-        return Stack(
-          children: [
-            Center(
-              child: Container(
-                width: frameWidth,
-                height: frameHeight,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.45 + glowStrength * 0.4),
-                    width: 2.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.2 + glowStrength * 0.4),
-                      blurRadius: 18 + glowStrength * 18,
-                      spreadRadius: 1 + glowStrength * 4,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Center(
-              child: SizedBox(
-                width: frameWidth,
-                height: frameHeight,
-                child: _CornerBrackets(glowStrength: glowStrength),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _GradientOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withOpacity(0.75),
-              Colors.transparent,
-              Colors.transparent,
-              Colors.black.withOpacity(0.8),
-            ],
-            stops: const [0, 0.35, 0.65, 1],
-          ),
-        ),
+      child: CustomPaint(
+        painter: _GridPainter(),
       ),
     );
   }
 }
 
+class _GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.35)
+      ..strokeWidth = 1;
+
+    final thirdWidth = size.width / 3;
+    final thirdHeight = size.height / 3;
+
+    for (int i = 1; i <= 2; i++) {
+      final dx = thirdWidth * i;
+      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), paint);
+    }
+
+    for (int i = 1; i <= 2; i++) {
+      final dy = thirdHeight * i;
+      canvas.drawLine(Offset(0, dy), Offset(size.width, dy), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class _CameraTopBar extends StatelessWidget {
   const _CameraTopBar({
     required this.isFlashOn,
-    required this.canSwitch,
     required this.onFlashToggle,
-    required this.onSwitchCamera,
   });
 
   final bool isFlashOn;
-  final bool canSwitch;
   final VoidCallback onFlashToggle;
-  final VoidCallback onSwitchCamera;
 
   @override
   Widget build(BuildContext context) {
+    const iconColor = Color(0xFF1A497F);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _GlassIconButton(
-          icon: Icons.close,
+        _CameraIconButton(
+          icon: Icons.arrow_back_ios_new,
+          size: 40,
+          iconSize: 30,
+          iconColor: iconColor,
           onTap: () => Navigator.of(context).pop(),
         ),
-        Row(
-          children: [
-            _GlassIconButton(
-              icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
-              onTap: onFlashToggle,
-            ),
-            const SizedBox(width: 12),
-            _GlassIconButton(
-              icon: Icons.cameraswitch,
-              onTap: canSwitch ? onSwitchCamera : null,
-            ),
-          ],
+        _CameraIconButton(
+          icon: isFlashOn ? Icons.flash_on : Icons.flash_off,
+          size: 30,
+          iconSize: 30,
+          iconColor: iconColor,
+          onTap: onFlashToggle,
         ),
       ],
     );
   }
 }
 
-class _GlassIconButton extends StatelessWidget {
-  const _GlassIconButton({
+class _CameraIconButton extends StatelessWidget {
+  const _CameraIconButton({
     required this.icon,
     required this.onTap,
+    required this.size,
+    required this.iconSize,
+    required this.iconColor,
   });
 
   final IconData icon;
   final VoidCallback? onTap;
+  final double size;
+  final double iconSize;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
     return _PressableScale(
       onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              blurRadius: 10,
-            ),
-          ],
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Center(
+          child: Icon(icon, color: iconColor, size: iconSize),
         ),
-        child: Icon(icon, color: Colors.white),
       ),
     );
   }
@@ -437,122 +358,25 @@ class _CaptureButton extends StatelessWidget {
     return _PressableScale(
       onTap: onTap,
       child: Container(
-        width: 78,
-        height: 78,
+        width: 86,
+        height: 86,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 4),
-          color: isCapturing
-              ? Colors.white.withOpacity(0.45)
-              : Colors.white.withOpacity(0.15),
+          border: Border.all(color: const Color(0xFF0B2F5B), width: 2),
+          color: Colors.white.withOpacity(0.2),
         ),
         child: Center(
           child: Container(
-            width: 52,
-            height: 52,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [accentColor, accentColor.withOpacity(0.7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: accentColor.withOpacity(0.6),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ],
+              color: accentColor,
             ),
           ),
         ),
       ),
     );
-  }
-}
-
-class _CornerBrackets extends StatelessWidget {
-  const _CornerBrackets({required this.glowStrength});
-
-  final double glowStrength;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _CornerPainter(glowStrength: glowStrength),
-    );
-  }
-}
-
-class _CornerPainter extends CustomPainter {
-  _CornerPainter({required this.glowStrength});
-
-  final double glowStrength;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.7 + glowStrength * 0.25)
-      ..strokeWidth = 4 + glowStrength * 2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    const cornerLength = 28.0;
-    final radius = 18.0;
-
-    // Top-left
-    canvas.drawLine(
-      Offset(0 + radius, 0),
-      Offset(cornerLength + radius, 0),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(0, 0 + radius),
-      Offset(0, cornerLength + radius),
-      paint,
-    );
-
-    // Top-right
-    canvas.drawLine(
-      Offset(size.width - radius, 0),
-      Offset(size.width - cornerLength - radius, 0),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width, 0 + radius),
-      Offset(size.width, cornerLength + radius),
-      paint,
-    );
-
-    // Bottom-left
-    canvas.drawLine(
-      Offset(0 + radius, size.height),
-      Offset(cornerLength + radius, size.height),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(0, size.height - radius),
-      Offset(0, size.height - cornerLength - radius),
-      paint,
-    );
-
-    // Bottom-right
-    canvas.drawLine(
-      Offset(size.width - radius, size.height),
-      Offset(size.width - cornerLength - radius, size.height),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width, size.height - radius),
-      Offset(size.width, size.height - cornerLength - radius),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _CornerPainter oldDelegate) {
-    return oldDelegate.glowStrength != glowStrength;
   }
 }
 

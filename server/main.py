@@ -119,13 +119,13 @@ async def analyze(file: UploadFile = File(...)):
     b64_img = base64.b64encode(image_bytes).decode()
     prompt = (
         "1. Extract the product name from the image.\n"
-        "2. Estimate the production origin of this product using the template: 'country name %', listing all relevant countries and их approximate percentages. If you are not sure, provide your best guess based on available information, but always include percentage estimates with the most likely country first.\n"
+        "2. Estimate the production origin of this product using the template: 'country name %'. Include all countries with probability over 30% (the count can vary), and list at most 5 countries, ordered from most likely to least. Do not limit the output to only two countries if more are relevant. If you are not sure, provide your best guess based on available information, but always include percentage estimates with the most likely country first.\n"
         "3. Specify the country of the headquarters (HQ) of the company.\n"
         "4. Specify the country where the company pays taxes and receives profit.\n"
         "Format the answer exactly as in this example (replace with actual product name and countries):\n"
         "Product Name\n"
         "Production origin and headquarters:\n"
-        "- Estimated production origin of Product Name: Country1 70%, Country2 30%\n"
+        "- Estimated production origin of Product Name: Country1 44%, Country2 36%, Country3 31%\n"
         "- Country of the HQ: CountryName\n"
         "- Country where the company pays taxes and receives profit: CountryName\n"
         "If any information is missing, do your best to estimate or leave it blank."
