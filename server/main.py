@@ -429,6 +429,7 @@ async def analyze(file: UploadFile = File(...)):
             api_key=OPENAI_API_KEY,
         )
         company = company_response.choices[0].message["content"].strip()
+        logger.info("company=raw value=%s", company)
 
         def _is_invalid_company(value: str, product_name: str) -> bool:
             if not value:
@@ -445,6 +446,8 @@ async def analyze(file: UploadFile = File(...)):
             if normalized in {"for", "a", "an", "the", "this", "that", "these", "those", "product", "the product"}:
                 return True
             product_norm = product_name.strip().lower()
+            if product_norm.startswith(f"{normalized} "):
+                return False
             return (
                 normalized == product_norm
                 or normalized in product_norm
@@ -467,6 +470,7 @@ async def analyze(file: UploadFile = File(...)):
                 api_key=OPENAI_API_KEY,
             )
             company = retry_response.choices[0].message["content"].strip()
+            logger.info("company=retry value=%s", company)
             if _is_invalid_company(company, product):
                 inferred = None
                 if re.search(r"\bbosch\b", product, re.IGNORECASE):
@@ -475,6 +479,7 @@ async def analyze(file: UploadFile = File(...)):
 
         if not company:
             company = "Not identified"
+        logger.info("company=final value=%s", company)
 
         result = (
             f"{product}\n\n"
