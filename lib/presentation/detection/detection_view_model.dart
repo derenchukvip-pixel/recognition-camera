@@ -41,8 +41,9 @@ class DetectionViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   int? get lastDurationMs => _lastDurationMs;
   RecognitionResult? get result => _result;
-  String? get productName => _result?.productName ?? _resultText;
+  String? get productName => _result?.productName;
   String? get productionOrigin => _result?.productionOrigin;
+  String? get companyName => _result?.companyName;
   String? get hqCountry => _result?.hqCountry;
   String? get taxCountry => _result?.taxCountry;
   bool get isLoading => _status == DetectionStatus.analyzing;

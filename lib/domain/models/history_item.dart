@@ -39,7 +39,7 @@ class HistoryItem {
   factory HistoryItem.fromJson(Map<String, dynamic> json) {
     return HistoryItem(
       id: json['id'] as String? ?? '',
-      productName: json['productName'] as String? ?? 'Unknown product',
+      productName: json['productName'] as String? ?? 'Not identified',
       companyName: json['companyName'] as String? ?? 'Unknown company',
       imagePath: json['imagePath'] as String? ?? '',
       originalImagePath: json['originalImagePath'] as String? ??
