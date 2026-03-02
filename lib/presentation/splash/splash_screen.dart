@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/consent/disclaimer_storage.dart';
+import '../detection/detection_screen.dart';
 import '../terms/terms_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -12,15 +14,25 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  static final DisclaimerStorage _disclaimerStorage = DisclaimerStorage();
+
   @override
   void initState() {
     super.initState();
-  Future.delayed(const Duration(milliseconds: 2200), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const TermsScreen()),
-      );
-    });
+    _navigateNext();
+  }
+
+  Future<void> _navigateNext() async {
+    await Future.delayed(const Duration(milliseconds: 2200));
+    if (!mounted) return;
+    final accepted = await _disclaimerStorage.isAccepted();
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) =>
+            accepted ? const DetectionScreen() : const TermsScreen(),
+      ),
+    );
   }
 
   @override

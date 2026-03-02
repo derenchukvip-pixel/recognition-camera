@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/error/app_error.dart';
@@ -32,10 +33,12 @@ class RecognitionApiDio implements RecognitionApi {
 
       final data = response.data;
       if (data is String) {
+        debugPrint('Recognition API raw response: $data');
         return RecognitionResult.fromResponse(data);
       }
       if (data is Map<String, dynamic>) {
         final resultText = data['result']?.toString() ?? jsonEncode(data);
+        debugPrint('Recognition API raw response: $resultText');
         return RecognitionResult.fromResponse(
           resultText,
           rawResponse: jsonEncode(data),

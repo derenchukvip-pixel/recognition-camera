@@ -7,11 +7,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:recognition_camera/main.dart';
 
 void main() {
   testWidgets('App starts on splash screen then shows terms', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const RecognitionCameraApp());
     expect(find.text('WerWo'), findsOneWidget);
     expect(find.text('Know the origin.\nUnderstand the impact.'), findsOneWidget);

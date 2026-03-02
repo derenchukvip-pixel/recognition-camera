@@ -96,8 +96,8 @@ class _DetectionHomeState extends State<_DetectionHome> {
       _lastHistoryImagePath = viewModel.imageFile!.path;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         historyViewModel.addFromResult(
-          productName: viewModel.productName ?? 'Unknown product',
-          companyName: viewModel.hqCountry ?? 'Unknown company',
+          productName: viewModel.productName ?? 'Not identified',
+          companyName: viewModel.companyName ?? 'Unknown company',
           resultText: viewModel.resultText ?? '',
           imageFile: viewModel.imageFile!,
           productionOrigin: viewModel.productionOrigin,
@@ -114,8 +114,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
             IndexedStack(
               index: _currentIndex,
               children: [
-                viewModel.isAwaitingConfirmation &&
-                        viewModel.imageFile != null
+                viewModel.isAwaitingConfirmation && viewModel.imageFile != null
                     ? _ConfirmPhotoView(
                         imageFile: viewModel.imageFile!,
                         onConfirm: viewModel.confirmAnalysis,
@@ -127,6 +126,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
                     : viewModel.resultText != null && !viewModel.isLoading
                         ? _AnalyzedImageView(
                             productName: viewModel.productName,
+                            companyName: viewModel.companyName,
                             productionOrigin: viewModel.productionOrigin,
                             hqCountry: viewModel.hqCountry,
                             taxCountry: viewModel.taxCountry,
@@ -140,10 +140,10 @@ class _DetectionHomeState extends State<_DetectionHome> {
                               final imageFile = viewModel.imageFile;
                               if (imageFile == null) return;
                               savedViewModel.toggleFromResult(
-                                productName: viewModel.productName ??
-                                    'Unknown product',
+                                productName:
+                                    viewModel.productName ?? 'Not identified',
                                 companyName:
-                                    viewModel.hqCountry ?? 'Unknown company',
+                                    viewModel.companyName ?? 'Unknown company',
                                 imageFile: imageFile,
                                 productionOrigin: viewModel.productionOrigin,
                                 hqCountry: viewModel.hqCountry,
@@ -162,12 +162,13 @@ class _DetectionHomeState extends State<_DetectionHome> {
           ],
         ),
       ),
-      bottomNavigationBar: viewModel.isLoading || viewModel.isAwaitingConfirmation
-          ? null
-          : _BottomNavBar(
-              currentIndex: _currentIndex,
-              onTap: _onTabSelected,
-            ),
+      bottomNavigationBar:
+          viewModel.isLoading || viewModel.isAwaitingConfirmation
+              ? null
+              : _BottomNavBar(
+                  currentIndex: _currentIndex,
+                  onTap: _onTabSelected,
+                ),
     );
   }
 }
@@ -559,6 +560,7 @@ class _AnalyzingOverlay extends StatelessWidget {
 class _AnalyzedImageView extends StatelessWidget {
   const _AnalyzedImageView({
     required this.productName,
+    required this.companyName,
     required this.productionOrigin,
     required this.hqCountry,
     required this.taxCountry,
@@ -570,6 +572,7 @@ class _AnalyzedImageView extends StatelessWidget {
   });
 
   final String? productName;
+  final String? companyName;
   final String? productionOrigin;
   final String? hqCountry;
   final String? taxCountry;
@@ -670,24 +673,26 @@ class _AnalyzedImageView extends StatelessWidget {
           const SizedBox(height: 20),
           _InfoRow(
             label: 'Product:',
-            value: productName ?? 'Not found',
+            value: productName ?? 'Not identified',
           ),
           const SizedBox(height: 12),
           _InfoRow(
             label: 'Company:',
-            value: hqCountry ?? 'Not found',
+            value: (companyName == null || companyName!.trim().isEmpty)
+                ? 'Not identified'
+                : companyName!,
           ),
           const SizedBox(height: 16),
           _InfoSplitRow(
             label: 'Production',
-            value: productionOrigin ?? 'Not found',
+            value: productionOrigin ?? 'Not identified',
             onStatusTap: onOpenPreferences,
             preferences: preferences,
           ),
           const Divider(height: 24),
           _InfoSplitRow(
             label: 'Tax & Profit',
-            value: taxCountry ?? 'Not found',
+            value: taxCountry ?? 'Not identified',
             onStatusTap: onOpenPreferences,
             preferences: preferences,
           ),
@@ -818,23 +823,21 @@ List<_CountryLine> _parseCountryLines(
       .where((part) => part.isNotEmpty)
       .toList();
   if (parts.isEmpty) {
-    return [const _CountryLine(text: 'Not found')];
+    return [const _CountryLine(text: 'Not identified')];
   }
-  return parts
-      .map((part) {
-        final lower = part.toLowerCase();
-        if (lower.contains('other countries')) {
-          return _CountryLine(text: part, status: null);
-        }
-        if (preferences.matchesAligned(part)) {
-          return _CountryLine(text: part, status: _CountryStatus.aligned);
-        }
-        if (preferences.matchesLessAligned(part)) {
-          return _CountryLine(text: part, status: _CountryStatus.misaligned);
-        }
-        return _CountryLine(text: part, status: null);
-      })
-      .toList();
+  return parts.map((part) {
+    final lower = part.toLowerCase();
+    if (lower.contains('other countries')) {
+      return _CountryLine(text: part, status: null);
+    }
+    if (preferences.matchesAligned(part)) {
+      return _CountryLine(text: part, status: _CountryStatus.aligned);
+    }
+    if (preferences.matchesLessAligned(part)) {
+      return _CountryLine(text: part, status: _CountryStatus.misaligned);
+    }
+    return _CountryLine(text: part, status: null);
+  }).toList();
 }
 
 Color _lineColor(_CountryStatus? status) {

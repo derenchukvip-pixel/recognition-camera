@@ -1,7 +1,14 @@
 import 'package:flutter/foundation.dart';
 import '../../core/config/origin_preferences.dart';
+import '../../core/config/origin_preferences_storage.dart';
 
 class OriginPreferencesViewModel extends ChangeNotifier {
+  OriginPreferencesViewModel({OriginPreferencesStorage? storage})
+      : _storage = storage ?? OriginPreferencesStorage() {
+    _loadPreferences();
+  }
+
+  final OriginPreferencesStorage _storage;
   List<String> _aligned = List.from(OriginPreferences.defaultAlignedCountries);
   List<String> _lessAligned = [];
 
@@ -13,6 +20,7 @@ class OriginPreferencesViewModel extends ChangeNotifier {
     if (normalized.isEmpty) return;
     _aligned = _mergeCountry(_aligned, country);
     _lessAligned = _removeNormalized(_lessAligned, normalized);
+    await _persist();
     notifyListeners();
   }
 
@@ -21,19 +29,38 @@ class OriginPreferencesViewModel extends ChangeNotifier {
     if (normalized.isEmpty) return;
     _lessAligned = _mergeCountry(_lessAligned, country);
     _aligned = _removeNormalized(_aligned, normalized);
+    await _persist();
     notifyListeners();
   }
 
   Future<void> removeAligned(String country) async {
     final normalized = OriginPreferences.normalize(country);
     _aligned = _removeNormalized(_aligned, normalized);
+    await _persist();
     notifyListeners();
   }
 
   Future<void> removeLessAligned(String country) async {
     final normalized = OriginPreferences.normalize(country);
     _lessAligned = _removeNormalized(_lessAligned, normalized);
+    await _persist();
     notifyListeners();
+  }
+
+  Future<void> _loadPreferences() async {
+    final stored = await _storage.load();
+    if (stored == null) {
+      _aligned = List.from(OriginPreferences.defaultAlignedCountries);
+      _lessAligned = [];
+    } else {
+      _aligned = List.from(stored.aligned);
+      _lessAligned = List.from(stored.lessAligned);
+    }
+    notifyListeners();
+  }
+
+  Future<void> _persist() async {
+    await _storage.save(aligned: _aligned, lessAligned: _lessAligned);
   }
 
   bool matchesAligned(String? text) {

@@ -114,23 +114,27 @@ class AnalysisDetailScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                     _InfoRow(
                       label: 'Product:',
-                      value: productName.isEmpty ? 'Not found' : productName,
+                      value: productName.isEmpty
+                          ? 'Not identified'
+                          : productName,
                     ),
                     const SizedBox(height: 12),
                     _InfoRow(
                       label: 'Company:',
-                      value: companyName.isEmpty ? 'Not found' : companyName,
+                      value: companyName.isEmpty
+                          ? 'Not identified'
+                          : companyName,
                     ),
                     const SizedBox(height: 16),
                     _InfoSplitRow(
                       label: 'Production',
-                      value: productionOrigin ?? 'Not found',
+                      value: productionOrigin ?? 'Not identified',
                       preferences: context.watch<OriginPreferencesViewModel>(),
                     ),
                     const Divider(height: 24),
                     _InfoSplitRow(
                       label: 'Tax & Profit',
-                      value: taxCountry ?? 'Not found',
+                      value: taxCountry ?? 'Not identified',
                       preferences: context.watch<OriginPreferencesViewModel>(),
                     ),
                   ],
@@ -260,7 +264,7 @@ List<_CountryLine> _parseCountryLines(
       .where((part) => part.isNotEmpty)
       .toList();
   if (parts.isEmpty) {
-    return [const _CountryLine(text: 'Not found')];
+  return [const _CountryLine(text: 'Not identified')];
   }
   return parts
       .map((part) {

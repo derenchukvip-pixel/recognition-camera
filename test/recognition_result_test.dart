@@ -1,0 +1,75 @@
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:recognition_camera/domain/models/recognition_result.dart';
+
+void main() {
+  test('parses product and country details from narrative response', () {
+    const response = """
+I'm unable to determine the exact product name from the image, but it appears to be an LG remote control. Here’s my best estimate:
+
+LG Remote Control
+Production origin and headquarters:
+- Estimated production origin of LG Remote Control: South Korea 50%, China 40%
+- Country of the HQ: South Korea
+- Country where the company pays taxes and receives profit: South Korea
+""";
+
+    final result = RecognitionResult.fromResponse(response);
+
+  expect(result.productName, 'LG Remote Control');
+    expect(result.productionOrigin, 'South Korea 50%, China 40%');
+    expect(result.hqCountry, 'South Korea');
+    expect(result.taxCountry, 'South Korea');
+  });
+
+  test('extracts product from production origin line', () {
+    const response = """
+Production origin and headquarters:
+- Estimated production origin of LG products: South Korea 60%, China 30%
+- Country of the HQ: Italy
+- Country where the company pays taxes and receives profit: Italy
+""";
+
+    final result = RecognitionResult.fromResponse(response);
+
+    expect(result.productName, 'LG products');
+    expect(result.companyName, 'LG');
+  });
+
+
+  test('returns nulls when response is a full refusal', () {
+    const response = "I'm sorry, I can't determine the product name or the countries from this image.";
+
+    final result = RecognitionResult.fromResponse(response);
+
+    expect(result.productName, isNull);
+    expect(result.productionOrigin, isNull);
+    expect(result.hqCountry, isNull);
+    expect(result.taxCountry, isNull);
+  });
+
+  test('does not extract product name from estimated analysis phrase', () {
+    const response =
+        "I'm unable to identify or extract text from the image. However, based on the visible logo, I can provide an estimated analysis for an LG product.";
+
+    final result = RecognitionResult.fromResponse(response);
+
+    expect(result.productName, isNull);
+  });
+
+  test('parses company from Company line', () {
+    const response = """
+Oral-B iO Series 4
+
+Production origin and headquarters:
+- Estimated production origin of Oral-B iO Series 4: Germany 50%, China 40%
+- Company: Oral-B
+- Country of the HQ: United States
+- Country where the company pays taxes and receives profit: United States
+""";
+
+    final result = RecognitionResult.fromResponse(response);
+
+    expect(result.companyName, 'Oral-B');
+  });
+}

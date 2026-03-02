@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +22,8 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
   bool _isCapturing = false;
   String? _errorMessage;
   bool _flashOn = false;
+  Offset? _focusPoint;
+  int _focusToken = 0;
 
   @override
   void initState() {
@@ -66,8 +70,8 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
     );
     await controller.initialize();
     await controller.setFlashMode(FlashMode.off);
+    await _configureFocus(controller);
     await _resetZoom(controller);
-    await _warmUpCapture(controller);
 
     if (!mounted) {
       await controller.dispose();
@@ -81,22 +85,6 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
     });
   }
 
-  Future<void> _warmUpCapture(CameraController controller) async {
-    try {
-      await Future.delayed(const Duration(milliseconds: 150));
-      if (!controller.value.isInitialized || controller.value.isTakingPicture) {
-        return;
-      }
-      final file = await controller.takePicture();
-      final tempFile = File(file.path);
-      if (await tempFile.exists()) {
-        await tempFile.delete();
-      }
-    } catch (_) {
-      // Ignore warm-up errors; user capture will still work normally.
-    }
-  }
-
   Future<void> _resetZoom(CameraController controller) async {
     try {
       final minZoom = await controller.getMinZoomLevel();
@@ -106,6 +94,74 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
     } catch (_) {
       // Some devices don't support zoom controls; ignore silently.
     }
+  }
+
+  Future<void> _configureFocus(CameraController controller) async {
+    try {
+      await controller.setFocusMode(FocusMode.auto);
+      await controller.setExposureMode(ExposureMode.auto);
+    } catch (_) {
+      // Focus or exposure modes may not be supported on some devices.
+    }
+  }
+
+  Future<void> _handleFocusTap(
+    Offset localPosition,
+    Size previewSize,
+  ) async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    final normalized = _normalizedOffset(
+      localPosition,
+      previewSize,
+      controller,
+    );
+    if (normalized == null) return;
+    try {
+      await controller.setFocusMode(FocusMode.auto);
+      await controller.setExposureMode(ExposureMode.auto);
+      await controller.setFocusPoint(normalized);
+      await controller.setExposurePoint(normalized);
+    } catch (_) {
+      // Some devices don't support focus/exposure points.
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _focusPoint = localPosition;
+      _focusToken += 1;
+    });
+
+    final token = _focusToken;
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (!mounted || token != _focusToken) return;
+    setState(() {
+      _focusPoint = null;
+    });
+  }
+
+  Offset? _normalizedOffset(
+    Offset tapPosition,
+    Size viewSize,
+    CameraController controller,
+  ) {
+    final previewSize = controller.value.previewSize;
+    if (previewSize == null) return null;
+
+    final previewWidth = previewSize.height;
+    final previewHeight = previewSize.width;
+    final scaleX = viewSize.width / previewWidth;
+    final scaleY = viewSize.height / previewHeight;
+    final scale = math.max(scaleX, scaleY);
+    final fittedWidth = previewWidth * scale;
+    final fittedHeight = previewHeight * scale;
+    final offsetX = (fittedWidth - viewSize.width) / 2;
+    final offsetY = (fittedHeight - viewSize.height) / 2;
+
+    final dx = (tapPosition.dx + offsetX) / fittedWidth;
+    final dy = (tapPosition.dy + offsetY) / fittedHeight;
+    return Offset(dx.clamp(0.0, 1.0), dy.clamp(0.0, 1.0));
   }
 
   Future<void> _toggleFlash() async {
@@ -195,13 +251,35 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
           child: Center(
             child: AspectRatio(
               aspectRatio: controller.value.aspectRatio,
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: controller.value.previewSize?.height ?? 1,
-                  height: controller.value.previewSize?.width ?? 1,
-                  child: CameraPreview(controller),
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapDown: (details) => _handleFocusTap(
+                      details.localPosition,
+                      constraints.biggest,
+                    ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: controller.value.previewSize?.height ?? 1,
+                            height: controller.value.previewSize?.width ?? 1,
+                            child: CameraPreview(controller),
+                          ),
+                        ),
+                        if (_focusPoint != null)
+                          Positioned(
+                            left: _focusPoint!.dx - 22,
+                            top: _focusPoint!.dy - 22,
+                            child: const _FocusIndicator(),
+                          ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -276,6 +354,30 @@ class _GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _FocusIndicator extends StatelessWidget {
+  const _FocusIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white, width: 2),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CameraTopBar extends StatelessWidget {
