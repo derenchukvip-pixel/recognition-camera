@@ -73,7 +73,7 @@ class AnalysisDetailScreen extends StatelessWidget {
                             color: Colors.black54,
                           ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 32),
                     Transform.translate(
                       offset: const Offset(-24, 0),
                       child: Align(

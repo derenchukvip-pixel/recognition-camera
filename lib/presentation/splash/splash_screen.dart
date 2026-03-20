@@ -43,7 +43,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final double horizontalPadding =
-                ((constraints.maxWidth - 203) / 2).clamp(16, 100);
+                ((constraints.maxWidth - 320) / 2).clamp(16, 60);
             final double bottomPadding =
                 (constraints.maxHeight * 0.12).clamp(64, 96);
             return Stack(
@@ -75,16 +75,13 @@ class _SplashScreenState extends State<SplashScreen> {
                   left: horizontalPadding,
                   right: horizontalPadding,
                   bottom: bottomPadding,
-                  child: SizedBox(
-                    height: 40,
-                    child: Text(
-                      'Know the origin.\nUnderstand the impact.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: SplashScreen._brandBlue,
-                        height: 1.25,
-                      ),
+                  child: Text(
+                    'Know the origin.\nUnderstand the impact.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: SplashScreen._brandBlue,
+                      height: 1.25,
                     ),
                   ),
                 ),

@@ -42,69 +42,73 @@ class _OriginPreferencesTabState extends State<OriginPreferencesTab> {
       viewModel,
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const SizedBox(height: 12),
-          const Align(
-            alignment: Alignment.topRight,
-            child: SizedBox(height: 34),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Origin Preferences',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: _primaryBlue,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Customize country priorities to match your values',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.black54,
-                ),
-          ),
-          const SizedBox(height: 20),
-          _PreferenceSection(
-            label: 'Value aligned\ncountries',
-            controller: _alignedController,
-            focusNode: _alignedFocus,
-            suggestions: alignedSuggestions,
-            onQueryChanged: (_) => setState(() {}),
-            onSelected: (country) async {
-              await viewModel.addAligned(country);
-              _alignedController.clear();
-              _alignedFocus.requestFocus();
-              setState(() {});
-            },
-            chips: viewModel.aligned,
-            chipColor: _alignedGreen,
-            onRemove: viewModel.removeAligned,
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: Color(0xFF1A497F), height: 24),
-          const SizedBox(height: 12),
-          _PreferenceSection(
-            label: 'Less aligned\ncountries',
-            controller: _lessAlignedController,
-            focusNode: _lessAlignedFocus,
-            suggestions: lessSuggestions,
-            onQueryChanged: (_) => setState(() {}),
-            onSelected: (country) async {
-              await viewModel.addLessAligned(country);
-              _lessAlignedController.clear();
-              _lessAlignedFocus.requestFocus();
-              setState(() {});
-            },
-            chips: viewModel.lessAligned,
-            chipColor: _warningRed,
-            onRemove: viewModel.removeLessAligned,
-          ),
-          const SizedBox(height: 24),
-        ],
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const SizedBox(height: 12),
+            const Align(
+              alignment: Alignment.topRight,
+              child: SizedBox(height: 34),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Origin Preferences',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: _primaryBlue,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Customize country priorities to match your values',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.black54,
+                  ),
+            ),
+            const SizedBox(height: 20),
+            _PreferenceSection(
+              label: 'Value aligned\ncountries',
+              controller: _alignedController,
+              focusNode: _alignedFocus,
+              suggestions: alignedSuggestions,
+              onQueryChanged: (_) => setState(() {}),
+              onSelected: (country) async {
+                await viewModel.addAligned(country);
+                _alignedController.clear();
+                _alignedFocus.requestFocus();
+                setState(() {});
+              },
+              chips: viewModel.aligned,
+              chipColor: _alignedGreen,
+              onRemove: viewModel.removeAligned,
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: Color(0xFF1A497F), height: 24),
+            const SizedBox(height: 12),
+            _PreferenceSection(
+              label: 'Less aligned\ncountries',
+              controller: _lessAlignedController,
+              focusNode: _lessAlignedFocus,
+              suggestions: lessSuggestions,
+              onQueryChanged: (_) => setState(() {}),
+              onSelected: (country) async {
+                await viewModel.addLessAligned(country);
+                _lessAlignedController.clear();
+                _lessAlignedFocus.requestFocus();
+                setState(() {});
+              },
+              chips: viewModel.lessAligned,
+              chipColor: _warningRed,
+              onRemove: viewModel.removeLessAligned,
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -279,21 +283,29 @@ class _SearchField extends StatelessWidget {
   final FocusNode focusNode;
   final ValueChanged<String> onChanged;
 
+  static const Color _primaryBlue = Color(0xFF052F61);
+
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
       focusNode: focusNode,
+      cursorColor: _primaryBlue,
       decoration: InputDecoration(
         isDense: true,
         hintText: 'Search...',
-        prefixIcon: const Icon(Icons.search, size: 20),
+        prefixIcon: const Icon(Icons.search, size: 20, color: _primaryBlue),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _primaryBlue),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF1A497F)),
+          borderSide: const BorderSide(color: _primaryBlue),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _primaryBlue, width: 1.6),
         ),
       ),
       onTap: () => focusNode.requestFocus(),
