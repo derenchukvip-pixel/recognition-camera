@@ -216,7 +216,7 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: _buildBody(theme),
     );
   }

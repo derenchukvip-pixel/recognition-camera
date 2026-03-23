@@ -47,6 +47,13 @@ class RecognitionCameraApp extends StatelessWidget {
         primarySwatch: Colors.green,
         useMaterial3: true,
         fontFamily: 'Helvetica Neue',
+        textTheme: ThemeData.light().textTheme.copyWith(
+              headlineSmall: const TextStyle(fontSize: 32),
+              titleLarge: const TextStyle(fontSize: 32),
+              bodyLarge: const TextStyle(fontSize: 16),
+              bodyMedium: const TextStyle(fontSize: 16),
+              bodySmall: const TextStyle(fontSize: 16),
+            ),
       ),
       home: const SplashScreen(),
       debugShowCheckedModeBanner: false,

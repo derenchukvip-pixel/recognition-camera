@@ -50,6 +50,10 @@ class AnalysisDetailScreen extends StatelessWidget {
                       children: [
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                          focusColor: Colors.transparent,
                           icon: const Icon(
                             Icons.close,
                             color: Color(0xFF052F61),
@@ -61,10 +65,11 @@ class AnalysisDetailScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Analysed Image',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: const Color(0xFF052F61),
-                            fontWeight: FontWeight.w700,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: const Color(0xFF052F61),
+                                fontWeight: FontWeight.w700,
+                              ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -73,7 +78,7 @@ class AnalysisDetailScreen extends StatelessWidget {
                             color: Colors.black54,
                           ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 32),
                     Transform.translate(
                       offset: const Offset(-24, 0),
                       child: Align(
@@ -114,16 +119,14 @@ class AnalysisDetailScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                     _InfoRow(
                       label: 'Product:',
-                      value: productName.isEmpty
-                          ? 'Not identified'
-                          : productName,
+                      value:
+                          productName.isEmpty ? 'Not identified' : productName,
                     ),
                     const SizedBox(height: 12),
                     _InfoRow(
                       label: 'Company:',
-                      value: companyName.isEmpty
-                          ? 'Not identified'
-                          : companyName,
+                      value:
+                          companyName.isEmpty ? 'Not identified' : companyName,
                     ),
                     const SizedBox(height: 16),
                     _InfoSplitRow(
@@ -264,23 +267,21 @@ List<_CountryLine> _parseCountryLines(
       .where((part) => part.isNotEmpty)
       .toList();
   if (parts.isEmpty) {
-  return [const _CountryLine(text: 'Not identified')];
+    return [const _CountryLine(text: 'Not identified')];
   }
-  return parts
-      .map((part) {
-        final lower = part.toLowerCase();
-        if (lower.contains('other countries')) {
-          return _CountryLine(text: part, status: null);
-        }
-        if (preferences.matchesAligned(part)) {
-          return _CountryLine(text: part, status: _CountryStatus.aligned);
-        }
-        if (preferences.matchesLessAligned(part)) {
-          return _CountryLine(text: part, status: _CountryStatus.misaligned);
-        }
-        return _CountryLine(text: part, status: null);
-      })
-      .toList();
+  return parts.map((part) {
+    final lower = part.toLowerCase();
+    if (lower.contains('other countries')) {
+      return _CountryLine(text: part, status: null);
+    }
+    if (preferences.matchesAligned(part)) {
+      return _CountryLine(text: part, status: _CountryStatus.aligned);
+    }
+    if (preferences.matchesLessAligned(part)) {
+      return _CountryLine(text: part, status: _CountryStatus.misaligned);
+    }
+    return _CountryLine(text: part, status: null);
+  }).toList();
 }
 
 Color _lineColor(_CountryStatus? status) {

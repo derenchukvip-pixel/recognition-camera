@@ -94,29 +94,32 @@ class SavedTab extends StatelessWidget {
           direction: DismissDirection.endToStart,
           onDismissed: (_) => viewModel.remove(item.id),
           background: const _DeleteBackground(),
-          child: InkWell(
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => AnalysisDetailScreen(
-                    imagePath: item.imagePath,
-                    fallbackImagePath: item.originalImagePath,
-                    productName: item.productName,
-                    companyName: item.companyName,
-                    productionOrigin: item.productionOrigin,
-                    hqCountry: item.hqCountry,
-                    taxCountry: item.taxCountry,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AnalysisDetailScreen(
+                      imagePath: item.imagePath,
+                      fallbackImagePath: item.originalImagePath,
+                      productName: item.productName,
+                      companyName: item.companyName,
+                      productionOrigin: item.productionOrigin,
+                      hqCountry: item.hqCountry,
+                      taxCountry: item.taxCountry,
+                    ),
                   ),
-                ),
-              );
-            },
-            child: _SavedItemCard(
-              imagePath: item.imagePath,
-              fallbackImagePath: item.originalImagePath,
-              productName: item.productName,
-              companyName: item.companyName,
-              onUnsave: () => viewModel.remove(item.id),
+                );
+              },
+              child: _SavedItemCard(
+                imagePath: item.imagePath,
+                fallbackImagePath: item.originalImagePath,
+                productName: item.productName,
+                companyName: item.companyName,
+                onUnsave: () => viewModel.remove(item.id),
+              ),
             ),
           ),
         );
@@ -220,8 +223,7 @@ class _SavedItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageFile = File(imagePath);
     final fallbackFile = File(fallbackImagePath);
-    final shouldUseFallback =
-        imagePath.isEmpty || !imageFile.existsSync();
+    final shouldUseFallback = imagePath.isEmpty || !imageFile.existsSync();
     final displayFile = shouldUseFallback ? fallbackFile : imageFile;
     return Container(
       padding: const EdgeInsets.all(12),
@@ -270,6 +272,10 @@ class _SavedItemCard extends StatelessWidget {
           const SizedBox(width: 12),
           IconButton(
             onPressed: onUnsave,
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            hoverColor: Colors.transparent,
+            focusColor: Colors.transparent,
             icon: Image.asset(
               'materials/Icons/bookmark_filled.png',
               width: 30,

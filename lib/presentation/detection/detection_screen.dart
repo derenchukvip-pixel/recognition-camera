@@ -225,7 +225,7 @@ class _DetectionScreenView extends StatelessWidget {
         children: [
           const Spacer(flex: 2),
           Center(child: _ScanBox(imageFile: viewModel.imageFile)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 64),
           SizedBox(
             width: 240,
             height: 44,
@@ -418,6 +418,10 @@ class _DetectionErrorView extends StatelessWidget {
             alignment: Alignment.topRight,
             child: IconButton(
               onPressed: onClose,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              hoverColor: Colors.transparent,
+              focusColor: Colors.transparent,
               icon: Icon(Icons.close, color: _primaryBlue, size: 30),
             ),
           ),
@@ -596,6 +600,10 @@ class _AnalyzedImageView extends StatelessWidget {
             children: [
               IconButton(
                 onPressed: onSave,
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                focusColor: Colors.transparent,
                 icon: isSaved
                     ? Image.asset(
                         'materials/Icons/bookmark_filled.png',
@@ -612,6 +620,10 @@ class _AnalyzedImageView extends StatelessWidget {
               ),
               IconButton(
                 onPressed: onClose,
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                focusColor: Colors.transparent,
                 icon: Image.asset(
                   'materials/Icons/close.png',
                   width: 30,
@@ -636,7 +648,7 @@ class _AnalyzedImageView extends StatelessWidget {
                   color: Colors.black54,
                 ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
           Transform.translate(
             offset: const Offset(-24, 0),
             child: Align(
@@ -980,44 +992,38 @@ class _BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: 64,
-        decoration: const BoxDecoration(
-          color: _secondaryBlue,
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x22000000),
-              blurRadius: 12,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        padding: EdgeInsets.zero,
-        child: Row(
-          children: [
-            _BottomNavItem(
-              assetPath: 'materials/Icons/photo_camera.png',
-              isSelected: currentIndex == 0,
-              onTap: () => onTap(0),
-            ),
-            _BottomNavItem(
-              assetPath: 'materials/Icons/bookmark.png',
-              isSelected: currentIndex == 1,
-              onTap: () => onTap(1),
-            ),
-            _BottomNavItem(
-              assetPath: 'materials/Icons/history.png',
-              isSelected: currentIndex == 2,
-              onTap: () => onTap(2),
-            ),
-            _BottomNavItem(
-              assetPath: 'materials/Icons/brightness_5.png',
-              isSelected: currentIndex == 3,
-              onTap: () => onTap(3),
-            ),
-          ],
+    return Container(
+      color: _secondaryBlue,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          height: 64,
+          decoration: const BoxDecoration(color: _secondaryBlue),
+          padding: EdgeInsets.zero,
+          child: Row(
+            children: [
+              _BottomNavItem(
+                assetPath: 'materials/Icons/photo_camera.png',
+                isSelected: currentIndex == 0,
+                onTap: () => onTap(0),
+              ),
+              _BottomNavItem(
+                assetPath: 'materials/Icons/bookmark.png',
+                isSelected: currentIndex == 1,
+                onTap: () => onTap(1),
+              ),
+              _BottomNavItem(
+                assetPath: 'materials/Icons/history.png',
+                isSelected: currentIndex == 2,
+                onTap: () => onTap(2),
+              ),
+              _BottomNavItem(
+                assetPath: 'materials/Icons/brightness_5.png',
+                isSelected: currentIndex == 3,
+                onTap: () => onTap(3),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1045,6 +1051,20 @@ class _BottomNavItem extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.zero,
+          splashColor: _primaryBlue.withOpacity(0.18),
+          highlightColor: _primaryBlue.withOpacity(0.22),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>(
+            (states) {
+              if (states.contains(WidgetState.pressed)) {
+                return _primaryBlue.withOpacity(0.26);
+              }
+              if (states.contains(WidgetState.hovered) ||
+                  states.contains(WidgetState.focused)) {
+                return _primaryBlue.withOpacity(0.14);
+              }
+              return null;
+            },
+          ),
           onTap: onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
