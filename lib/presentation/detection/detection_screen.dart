@@ -418,6 +418,10 @@ class _DetectionErrorView extends StatelessWidget {
             alignment: Alignment.topRight,
             child: IconButton(
               onPressed: onClose,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              hoverColor: Colors.transparent,
+              focusColor: Colors.transparent,
               icon: Icon(Icons.close, color: _primaryBlue, size: 30),
             ),
           ),
@@ -616,6 +620,10 @@ class _AnalyzedImageView extends StatelessWidget {
               ),
               IconButton(
                 onPressed: onClose,
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                focusColor: Colors.transparent,
                 icon: Image.asset(
                   'materials/Icons/close.png',
                   width: 30,
