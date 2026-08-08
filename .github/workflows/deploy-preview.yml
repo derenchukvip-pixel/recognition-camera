@@ -1,0 +1,71 @@
+name: Deploy UI preview to GitHub Pages
+
+# The app itself cannot run on the web — tflite_flutter, camera and
+# mobile_scanner are platform plugins with no web implementation. What deploys
+# here is `lib/main_preview.dart`: the result screen rendered against fixtures.
+# It takes a plain ProductReport and nothing else, so it renders anywhere.
+#
+# The point is a link a client can open in 30 seconds instead of cloning a repo
+# and building an APK.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/deploy-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; drop the older one rather than queueing it.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Gate the deploy on the same checks that run locally: a broken build
+      # should never become the link handed to a client.
+      - run: flutter analyze
+      - run: flutter test
+
+      - name: Build preview
+        run: flutter build web -t lib/main_preview.dart --base-href=/recognition-camera/
+
+      # GitHub Pages has no rewrite rules: a refresh on an in-app route would
+      # 404. Serving the same document for unknown paths hands the request back
+      # to the client-side router.
+      - name: SPA fallback
+        run: cp build/web/index.html build/web/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
