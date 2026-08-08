@@ -23,10 +23,12 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
 
+  http: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^6.0.0
 
 flutter_icons:
   android: true
@@ -42,3 +44,4 @@ flutter:
     - assets/models/yolov8/yolov8n_float32.tflite
     - assets/models/yolov8/labels.txt
     - materials/Icons/
+    - assets/preview/

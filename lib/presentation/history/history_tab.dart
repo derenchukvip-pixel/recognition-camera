@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../../domain/models/report_from_history.dart';
 import 'package:provider/provider.dart';
 
-import '../analysis/analysis_detail_screen.dart';
+import '../report/product_report_view.dart';
 import 'history_view_model.dart';
 
 class HistoryTab extends StatelessWidget {
@@ -100,14 +102,10 @@ class HistoryTab extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => AnalysisDetailScreen(
-                      imagePath: item.imagePath,
-                      fallbackImagePath: item.originalImagePath,
-                      productName: item.productName,
-                      companyName: item.companyName,
-                      productionOrigin: item.productionOrigin,
-                      hqCountry: item.hqCountry,
-                      taxCountry: item.taxCountry,
+                    builder: (_) => ProductReportView(
+                      report: item.toReport(),
+                      imageBuilder: (_) => _reportImage(item),
+                      onClose: () => Navigator.of(context).pop(),
                     ),
                   ),
                 );
@@ -287,4 +285,20 @@ class _DeleteBackground extends StatelessWidget {
       child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
     );
   }
+}
+
+/// Renders the stored photo, falling back to the pre-processing original when
+/// the annotated copy has been cleaned up by the OS.
+Widget _reportImage(dynamic item) {
+  for (final path in [item.imagePath as String, item.originalImagePath as String]) {
+    if (path.isEmpty) continue;
+    final file = File(path);
+    if (file.existsSync()) return Image.file(file, fit: BoxFit.cover);
+  }
+  return const ColoredBox(
+    color: Color(0xFFF4F7FA),
+    child: Center(
+      child: Icon(Icons.image_not_supported_outlined, color: Color(0xFF64748B)),
+    ),
+  );
 }

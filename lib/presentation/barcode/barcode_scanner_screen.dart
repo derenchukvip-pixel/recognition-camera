@@ -21,12 +21,17 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         _isProcessing = true;
         _barcode = barcode;
       });
-      // TODO: отправить barcode в Open Food Facts или другой обработчик
+      // The scanner keeps firing while the sheet animates out, so the result is
+      // handed back to the caller (which does the Open Food Facts lookup) after
+      // a short settle delay. Resolved before the gap: by the time it fires the
+      // user may have hit back and this State would be gone.
+      final navigator = Navigator.of(context);
       Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
         setState(() {
           _isProcessing = false;
         });
-        Navigator.of(context).pop(barcode);
+        navigator.pop(barcode);
       });
     }
   }

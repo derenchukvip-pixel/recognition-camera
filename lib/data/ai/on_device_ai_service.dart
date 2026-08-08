@@ -4,67 +4,7 @@ import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
-// Removed unused import
-// import 'package:tflite_flutter/tflite_flutter.dart';
-
 class OnDeviceAIService {
-  /// Оценка страны производства по типу объекта и/или баркоду
-  String estimateProductionInfo({String? objectLabel, String? barcode}) {
-    // По баркоду
-    if (barcode != null && barcode.isNotEmpty) {
-      if (barcode.startsWith('50')) {
-        return "40% UK, 40% China, 20% Other";
-      }
-      if (barcode.startsWith('00') ||
-          barcode.startsWith('01') ||
-          barcode.startsWith('02') ||
-          barcode.startsWith('03') ||
-          barcode.startsWith('04') ||
-          barcode.startsWith('05') ||
-          barcode.startsWith('06') ||
-          barcode.startsWith('07') ||
-          barcode.startsWith('08') ||
-          barcode.startsWith('09')) {
-        return "60% USA/Canada, 30% China, 10% Mexico";
-      }
-      if (barcode.startsWith('690') ||
-          barcode.startsWith('691') ||
-          barcode.startsWith('692') ||
-          barcode.startsWith('693') ||
-          barcode.startsWith('694') ||
-          barcode.startsWith('695') ||
-          barcode.startsWith('696') ||
-          barcode.startsWith('697') ||
-          barcode.startsWith('698') ||
-          barcode.startsWith('699')) {
-        return "70% China, 20% Other Asian countries, 10% Other";
-      }
-      // Можно добавить другие правила по префиксам
-    }
-    // По типу объекта
-    if (objectLabel != null && objectLabel.isNotEmpty) {
-      final label = objectLabel.toLowerCase();
-      if (label.contains("laptop")) {
-        return "70% China, 20% USA, 10% Other";
-      }
-      if (label.contains("cup")) {
-        return "60% China, 30% Europe, 10% Other";
-      }
-      if (label.contains("bottle")) {
-        return "80% China, 10% Europe, 10% Other";
-      }
-      if (label.contains("apple")) {
-        return "50% China, 30% Poland, 20% Other";
-      }
-      if (label.contains("car")) {
-        return "40% Germany, 30% Japan, 30% Other";
-      }
-      // ...добавить свои правила
-    }
-    // Если ничего не найдено
-    return "50% China, 30% Other Asia, 20% Other";
-  }
-
   Interpreter? _interpreter;
   List<String>? _labels;
   bool _initialized = false;
@@ -88,8 +28,8 @@ class OnDeviceAIService {
     // 1. Resize to 640x640
     final resized = img.copyResize(image, width: 640, height: 640);
 
-    // 2. Получить параметры inputTensor
-    // 3. Преобразовать изображение в Float32List (0..1)
+    // 2. Read the input tensor parameters
+    // 3. Convert the image to a Float32List normalised to 0..1
     final input = Float32List(640 * 640 * 3);
     int i = 0;
     for (var y = 0; y < 640; y++) {
@@ -118,28 +58,28 @@ class OnDeviceAIService {
     final numBoxes = outputShape.last;
     final detections = <Map<String, dynamic>>[];
 
-    // Собираем все боксы с confidence > threshold
+    // Collect every box above the confidence threshold
     for (int b = 0; b < numBoxes; b++) {
-      // scores: вероятности классов
+      // scores: per-class probabilities
       final scores =
           List<double>.generate(numClasses, (c) => output[0][c][b] as double);
       final classIdx = scores.indexOf(scores.reduce((a, b) => a > b ? a : b));
       final confidence = scores[classIdx];
-      // Логируем boxRaw для всех боксов с высоким confidence
+      // Raw box for every high-confidence detection
       final boxRaw =
           List.generate(4, (i) => (output[0][numClasses + i][b] as double));
       if (confidence > confThreshold &&
           classIdx >= 0 &&
           classIdx < numClasses &&
           classIdx < _labels!.length) {
-        // Преобразуем [cx, cy, w, h] в [x, y, w, h] (x, y — левый верхний угол)
+        // Convert [cx, cy, w, h] to [x, y, w, h] with (x, y) as the top-left corner
         final cx = boxRaw[0];
         final cy = boxRaw[1];
         final w = boxRaw[2];
         final h = boxRaw[3];
         final x = cx - w / 2;
         final y = cy - h / 2;
-        // Масштабируем координаты в размер исходного изображения
+        // Scale coordinates back to the original image size
         final bbox = <double>[
           x * image.width / 640.0,
           y * image.height / 640.0,
@@ -150,16 +90,16 @@ class OnDeviceAIService {
           'classIdx': classIdx,
           'label': _labels![classIdx],
           'confidence': confidence,
-          'box': bbox, // [x, y, w, h] в пикселях
+          'box': bbox, // [x, y, w, h] in pixels
         });
       }
     }
 
-    // NMS: оставляем только уникальные объекты
+    // Non-Maximum Suppression: collapse overlapping boxes of the same class
     List<Map<String, dynamic>> nmsDetections = _nms(detections, iouThreshold);
     if (nmsDetections.isEmpty) return 'No objects detected.';
 
-    // Группируем по label и оставляем только максимальный confidence для каждого класса
+    // Keep only the highest-confidence detection per label
     final Map<String, Map<String, dynamic>> bestByLabel = {};
     for (final det in nmsDetections) {
       final label = det['label'] as String;
@@ -168,7 +108,7 @@ class OnDeviceAIService {
         bestByLabel[label] = det;
       }
     }
-    // Сортируем по confidence и берём топ-3
+    // Sort by confidence and take the top 3
     final top3 = bestByLabel.values.toList()
       ..sort((a, b) =>
           (b['confidence'] as double).compareTo(a['confidence'] as double));
@@ -201,7 +141,7 @@ class OnDeviceAIService {
     return selected;
   }
 
-  // Intersection over Union (IoU) для двух боксов [x, y, w, h]
+  // Intersection over Union (IoU) for two [x, y, w, h] boxes
   double _iou(List<double> boxA, List<double> boxB) {
     final xA = boxA[0] - boxA[2] / 2;
     final yA = boxA[1] - boxA[3] / 2;

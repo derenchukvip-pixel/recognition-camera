@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -1045,22 +1044,22 @@ class _BottomNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color iconColor =
-        isSelected ? Colors.white : Colors.white.withOpacity(0.72);
+        isSelected ? Colors.white : Colors.white.withValues(alpha: 0.72);
     return Expanded(
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.zero,
-          splashColor: _primaryBlue.withOpacity(0.18),
-          highlightColor: _primaryBlue.withOpacity(0.22),
+          splashColor: _primaryBlue.withValues(alpha: 0.18),
+          highlightColor: _primaryBlue.withValues(alpha: 0.22),
           overlayColor: WidgetStateProperty.resolveWith<Color?>(
             (states) {
               if (states.contains(WidgetState.pressed)) {
-                return _primaryBlue.withOpacity(0.26);
+                return _primaryBlue.withValues(alpha: 0.26);
               }
               if (states.contains(WidgetState.hovered) ||
                   states.contains(WidgetState.focused)) {
-                return _primaryBlue.withOpacity(0.14);
+                return _primaryBlue.withValues(alpha: 0.14);
               }
               return null;
             },

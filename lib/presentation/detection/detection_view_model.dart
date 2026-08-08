@@ -176,7 +176,6 @@ class DetectionViewModel extends ChangeNotifier {
       stopwatch.stop();
       final durationMessage =
           'SendToServer duration: ${stopwatch.elapsedMilliseconds} ms';
-      print(durationMessage);
       debugPrint(durationMessage);
       _lastDurationMs = stopwatch.elapsedMilliseconds;
       if (token != _analysisToken) return;

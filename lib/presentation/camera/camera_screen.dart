@@ -64,35 +64,45 @@ class _CameraScreenState extends State<CameraScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      // Named `dialogContext` rather than `context`: shadowing the State's
+      // context here is what made the code below reach for a context that had
+      // already been popped.
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Result'),
           content: Image.file(File(image.path), fit: BoxFit.cover),
           actions: [
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
-                // Run AI processing
+                // Captured before the first await. Inference takes seconds, and
+                // by the time it returns this dialog is gone and the user may
+                // have left the screen entirely.
+                final messenger = ScaffoldMessenger.of(context);
+                Navigator.of(dialogContext).pop();
+
                 final result = await _aiService.processImage(File(image.path));
                 debugPrint('AI Result: $result');
                 if (!mounted) return;
+
                 await showDialog(
+                  // The State's context, not the popped dialog's.
                   context: context,
-                  builder: (context) => AlertDialog(
+                  builder: (resultContext) => AlertDialog(
                     title: const Text('AI Result'),
                     content: Text(result.isNotEmpty ? result : 'No result'),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () => Navigator.of(resultContext).pop(),
                         child: const Text('OK'),
                       ),
                     ],
                   ),
                 );
-                // Дополнительно: показать SnackBar, если результат пустой
-                if (result.isEmpty && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('AI не распознал объект!')),
+
+                // Surface a SnackBar when the model returns nothing
+                if (result.isEmpty) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('No object recognised.')),
                   );
                 }
               },
@@ -154,44 +164,48 @@ class _CameraScreenState extends State<CameraScreen> {
                   icon: const Icon(Icons.qr_code_scanner),
                   label: const Text('Scan barcode'),
                   onPressed: () async {
-                    final barcode = await Navigator.of(context).push<String>(
+                    // Both are resolved from the tree once, up front. After an
+                    // await the element this context points at may be gone, and
+                    // `Navigator.of` would then throw instead of navigating.
+                    final navigator = Navigator.of(context);
+                    final messenger = ScaffoldMessenger.of(context);
+
+                    final barcode = await navigator.push<String>(
                       MaterialPageRoute(
                         builder: (_) => const BarcodeScannerScreen(),
                       ),
                     );
-                    if (barcode != null) {
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) =>
-                            const Center(child: CircularProgressIndicator()),
-                      );
-                      try {
-                        final product =
-                            await _openFoodFactsApi.fetchProduct(barcode);
-                        if (!mounted) return;
-                        Navigator.of(context).pop(); // remove loading dialog
-                        if (product != null) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ProductInfoScreen(product: product),
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Product not found: $barcode'),
-                            ),
-                          );
-                        }
-                      } catch (error) {
-                        if (!mounted) return;
-                        Navigator.of(context).pop(); // remove loading dialog
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(mapToUserMessage(error))),
+                    if (barcode == null) return;
+                    if (!mounted) return;
+
+                    showDialog(
+                      context: this.context,
+                      barrierDismissible: false,
+                      builder: (_) =>
+                          const Center(child: CircularProgressIndicator()),
+                    );
+                    try {
+                      final product =
+                          await _openFoodFactsApi.fetchProduct(barcode);
+                      navigator.pop(); // remove loading dialog
+                      if (product != null) {
+                        navigator.push(
+                          MaterialPageRoute(
+                            builder: (_) => ProductInfoScreen(product: product),
+                          ),
+                        );
+                      } else {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Product not found: $barcode'),
+                          ),
                         );
                       }
+                    } catch (error) {
+                      navigator.pop(); // remove loading dialog
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(mapToUserMessage(error))),
+                      );
                     }
                   },
                 ),
