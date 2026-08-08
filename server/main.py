@@ -439,6 +439,10 @@ async def analyze(file: UploadFile = File(...)):
                 return True
             if "please provide textual information" in normalized or normalized == "please":
                 return True
+            # Russian generic category words the model sometimes returns in place
+            # of a brand ("nozzle", "set", "accessory"). These are data, not
+            # comments: translating them would stop the guard from matching what
+            # the model actually emits.
             if normalized in {"насадка", "комплект", "аксессуар", "аксессуары"}:
                 return True
             if _is_placeholder_value(normalized):

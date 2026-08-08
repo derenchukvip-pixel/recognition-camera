@@ -5,7 +5,8 @@ yolov8n.pt
 .DS_Store
 runs/
 
-# Максимально строгий .dockerignore для деплоя FastAPI
+# Deliberately aggressive: the deployed image only needs main.py and its
+# dependencies. Model weights, datasets and the Flutter app are all excluded.
 *.pt
 *.onnx
 *.npy

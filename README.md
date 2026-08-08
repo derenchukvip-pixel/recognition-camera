@@ -12,6 +12,14 @@ taxonomy, TTL caching, and an explicit consent gate before the first frame is ca
 > **One codebase, both platforms.** Everything here builds for iOS and Android from the same
 > Dart source.
 
+**▶ [Try the result screen in your browser](https://derenchukvip-pixel.github.io/recognition-camera/)**
+— three states, switchable: a verified barcode scan, a photo-only scan, and a barcode that
+fails its check digit. Deep links: [`?fixture=unreadable`](https://derenchukvip-pixel.github.io/recognition-camera/?fixture=unreadable)
+
+The full app cannot run on the web — `tflite_flutter`, `camera` and `mobile_scanner` are
+platform plugins with no web implementation. The result screen can, because it takes a
+plain `ProductReport` and nothing else.
+
 ## Screenshots
 
 | Barcode scan — verified | Photo scan — estimated | Unreadable barcode |
@@ -155,11 +163,26 @@ liability.
 Thresholds (`0.50` confidence, `0.45` IoU) are the tuned values for this model; both are
 single constants in `OnDeviceAIService`.
 
+## The optional backend
+
+`server/` holds the cloud-recognition service the app talks to when a heavier model is
+worth the round trip: **FastAPI, ~500 lines**, deployed on Railway.
+
+It is not a thin proxy. Most of it is the work of turning a vision model's prose into
+fields worth showing — rejecting answers where the model returned a generic category word
+instead of a brand, or echoed the product name back as the manufacturer, or replied with
+an apology. The app's on-device path stays fully functional when this service is
+unreachable, which is the whole reason it sits behind the `RecognitionApi` interface.
+
+The `OPENAI_API_KEY` is read from the environment; nothing secret is in the repository.
+
 ## Tech stack
 
-Flutter 3 / Dart 3 · `tflite_flutter` (YOLOv8n + MobileNet v1 assets) · `camera` ·
-`mobile_scanner` · `image` for pre-processing · `dio` · `provider` · `hive` ·
-`shared_preferences` · `flutter_localizations`. Optional backend: FastAPI (separate service).
+**Mobile** Flutter 3 / Dart 3 · `tflite_flutter` (YOLOv8n + MobileNet v1 assets) ·
+`camera` · `mobile_scanner` · `image` for pre-processing · `dio` · `provider` · `hive` ·
+`shared_preferences` · `flutter_localizations`
+
+**Backend** Python · FastAPI · OpenAI vision · Docker · Railway
 
 ## Running it
 
