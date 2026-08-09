@@ -29,6 +29,15 @@ class AppColors {
   static const Color estimatedSurface = Color(0xFFFDF1E0);
   static const Color unknown = Color(0xFF64748B);
   static const Color unknownSurface = Color(0xFFF1F5F9);
+
+  /// Failure. Kept apart from the provenance colours above even though the
+  /// hues are neighbours: those three say how much a claim can be trusted,
+  /// this one says an operation did not complete. Reusing `estimated` orange
+  /// for a network error would make a badge that means "this might be wrong"
+  /// also mean "something broke", and the badge is the one thing on screen
+  /// that has to keep meaning exactly one thing.
+  static const Color negative = Color(0xFFB11C1C);
+  static const Color negativeSurface = Color(0xFFFDECEC);
 }
 
 class AppSpacing {
@@ -51,6 +60,50 @@ class AppRadius {
 
   static const BorderRadius cardRadius = BorderRadius.all(md);
   static const BorderRadius pillRadius = BorderRadius.all(Radius.circular(999));
+}
+
+/// The one elevation in the app.
+///
+/// Deliberately singular. A second shadow would have to mean a second level of
+/// "raised", and nothing here is two levels above the page — a mix of blur
+/// radii across a small app reads as inattention, not depth. Applied only to
+/// things that genuinely float over their surroundings: the selected segment
+/// of a control, and nothing else so far.
+class AppShadow {
+  const AppShadow._();
+
+  static const List<BoxShadow> raised = [
+    BoxShadow(
+      color: Color(0x0F0B1B2B),
+      blurRadius: 2,
+      offset: Offset(0, 1),
+    ),
+    BoxShadow(
+      color: Color(0x140B1B2B),
+      blurRadius: 24,
+      offset: Offset(0, 8),
+    ),
+  ];
+}
+
+/// Durations, so that every transition in the app is one of three speeds
+/// rather than whatever felt right at the call site.
+///
+/// Nothing exceeds 300ms: past that, an animation stops explaining where
+/// something came from and starts making the app feel slow. Callers are
+/// expected to collapse these to [Duration.zero] when
+/// `MediaQuery.disableAnimationsOf` is true.
+class AppMotion {
+  const AppMotion._();
+
+  /// Presses, checkboxes — feedback that must feel instant.
+  static const Duration micro = Duration(milliseconds: 120);
+
+  /// A card appearing, a state changing in place.
+  static const Duration state = Duration(milliseconds: 200);
+
+  /// A whole screen replacing another.
+  static const Duration screen = Duration(milliseconds: 280);
 }
 
 class AppText {

@@ -27,6 +27,7 @@ class ProductReport {
     required this.registeredIn,
     required this.manufacturedIn,
     required this.headquarters,
+    this.taxJurisdiction,
     this.barcode,
     this.imagePath,
   });
@@ -43,6 +44,16 @@ class ProductReport {
   final ProvenanceClaim manufacturedIn;
 
   final ProvenanceClaim headquarters;
+
+  /// Where the brand owner books its profit, when that differs from the
+  /// headquarters. Null rather than [ProvenanceClaim.unknown] on purpose: the
+  /// two mean different things, and the screen treats them differently.
+  /// `unknown` says "we looked and nobody discloses it" and earns a row with
+  /// an Unknown badge; null says the reading never covered this at all — a
+  /// barcode lookup has nothing to say about tax residency — and earns no row.
+  /// Rendering an Unknown badge for a question that was never asked would
+  /// overstate how much the app checked.
+  final ProvenanceClaim? taxJurisdiction;
 
   final String? barcode;
   final String? imagePath;
@@ -121,5 +132,6 @@ class ProductReport {
         registeredIn,
         manufacturedIn,
         headquarters,
+        if (taxJurisdiction != null) taxJurisdiction!,
       ].any((c) => c.provenance == Provenance.verified && c.hasValue);
 }

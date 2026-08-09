@@ -1,3 +1,4 @@
+import '../claim_text.dart';
 import '../provenance.dart';
 import 'history_item.dart';
 import 'product_report.dart';
@@ -15,7 +16,7 @@ import 'saved_product.dart';
 /// `"Czech Republic x70%, Hungary x30%"` produced by a model that returned
 /// different numbers for the same box on consecutive scans. Rendering them
 /// as-is would reintroduce exactly the false precision this screen exists to
-/// remove, so [_stripFabricatedPercentages] keeps the country names and drops
+/// remove, so [stripFabricatedPercentages] keeps the country names and drops
 /// the digits.
 extension HistoryItemReport on HistoryItem {
   ProductReport toReport() => _legacyReport(
@@ -24,6 +25,7 @@ extension HistoryItemReport on HistoryItem {
         companyName: companyName,
         productionOrigin: productionOrigin,
         hqCountry: hqCountry,
+        taxCountry: taxCountry,
       );
 }
 
@@ -34,6 +36,7 @@ extension SavedProductReport on SavedProduct {
         companyName: companyName,
         productionOrigin: productionOrigin,
         hqCountry: hqCountry,
+        taxCountry: taxCountry,
       );
 }
 
@@ -43,8 +46,9 @@ ProductReport _legacyReport({
   required String companyName,
   required String? productionOrigin,
   required String? hqCountry,
+  required String? taxCountry,
 }) {
-  final origin = _stripFabricatedPercentages(productionOrigin);
+  final origin = stripFabricatedPercentages(productionOrigin);
 
   return ProductReport(
     imagePath: imagePath,
@@ -57,7 +61,10 @@ ProductReport _legacyReport({
       caveat: 'Saved before barcode lookup existed. Rescan the barcode for a '
           'reproducible answer.',
     ),
-    manufacturedIn: origin == null
+    // `isPlaceholderClaim` runs after the strip, not before: an origin of
+    // "Not identified" is a non-answer and must collapse to unknown rather
+    // than be rendered as a finding in the same slot as a real country.
+    manufacturedIn: isPlaceholderClaim(origin)
         ? const ProvenanceClaim.unknown()
         : ProvenanceClaim(
             value: origin,
@@ -67,41 +74,20 @@ ProductReport _legacyReport({
                 'invented percentages. Only the countries are kept.',
           ),
     headquarters: _legacyClaim(hqCountry),
+    // Null when the old row never recorded one, so the screen leaves the row
+    // out entirely rather than asserting that the tax jurisdiction is unknown.
+    taxJurisdiction:
+        isPlaceholderClaim(taxCountry) ? null : _legacyClaim(taxCountry),
   );
 }
 
 /// Legacy text: never better than a guess, and placeholder strings from the old
 /// pipeline collapse to unknown rather than being shown as findings.
 ProvenanceClaim _legacyClaim(String? value) {
-  final trimmed = value?.trim();
-  if (trimmed == null || trimmed.isEmpty) return const ProvenanceClaim.unknown();
-  const placeholders = {
-    'not identified',
-    'unknown company',
-    'unknown',
-    'n/a',
-  };
-  if (placeholders.contains(trimmed.toLowerCase())) {
-    return const ProvenanceClaim.unknown();
-  }
+  if (isPlaceholderClaim(value)) return const ProvenanceClaim.unknown();
   return ProvenanceClaim(
-    value: trimmed,
+    value: value!.trim(),
     provenance: Provenance.estimated,
     source: 'Recorded by an earlier version',
   );
-}
-
-/// Removes `x70%`, `70 %`, and bare `70%` from a legacy origin string, leaving
-/// the country names and tidying the punctuation that held them together.
-///
-/// Returns null when nothing but numbers was there to begin with.
-String? _stripFabricatedPercentages(String? value) {
-  if (value == null) return null;
-  var out = value.replaceAll(RegExp(r'\s*x?\s*\d+(?:[.,]\d+)?\s*%'), '');
-  out = out
-      .replaceAll(RegExp(r'\s*,\s*,+'), ',')
-      .replaceAll(RegExp(r'^[\s,;]+|[\s,;]+$'), '')
-      .replaceAll(RegExp(r'\s{2,}'), ' ')
-      .trim();
-  return out.isEmpty ? null : out;
 }
