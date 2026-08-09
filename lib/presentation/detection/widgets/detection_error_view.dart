@@ -16,11 +16,19 @@ class DetectionErrorView extends StatelessWidget {
     required this.message,
     required this.onRetry,
     required this.onPickFromGallery,
+    this.retryLabel = 'Try again',
+    this.retryIcon = Icons.photo_camera_outlined,
   });
 
   final String message;
   final VoidCallback onRetry;
   final VoidCallback onPickFromGallery;
+
+  /// The retry has to name the thing being retried. After a failed barcode
+  /// lookup, a button labelled "Try again" next to a camera icon sends the
+  /// user back into the wrong mode.
+  final String retryLabel;
+  final IconData retryIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -51,8 +59,8 @@ class DetectionErrorView extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           AppPrimaryButton(
-            label: 'Try again',
-            icon: Icons.photo_camera_outlined,
+            label: retryLabel,
+            icon: retryIcon,
             onPressed: onRetry,
           ),
           const SizedBox(height: AppSpacing.sm),

@@ -4,14 +4,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/error/app_error.dart';
+import '../../data/open_food_facts/open_food_facts_api.dart';
 import '../../data/recognition/recognition_api_dio.dart';
+import '../../domain/models/report_from_barcode.dart';
 import '../../domain/models/report_from_recognition.dart';
+import '../barcode/barcode_scanner_screen.dart';
 import '../camera/camera_capture_screen.dart';
 import '../design/tokens.dart';
 import '../history/history_tab.dart';
 import '../history/history_view_model.dart';
 import '../preferences/origin_preferences_tab.dart';
 import '../preferences/origin_preferences_view_model.dart';
+import '../report/product_report_view.dart';
 import '../report/scan_result_screen.dart';
 import '../saved/saved_products_view_model.dart';
 import '../saved/saved_tab.dart';
@@ -67,6 +72,14 @@ class _DetectionHome extends StatefulWidget {
 
 class _DetectionHomeState extends State<_DetectionHome> {
   int _currentIndex = 0;
+  ScanMode _scanMode = ScanMode.photo;
+
+  /// Held here rather than in a view model: the barcode path is a single
+  /// request with no state to keep between scans, and the only thing the UI
+  /// needs to know is whether it is in flight.
+  final OpenFoodFactsApi _openFoodFacts = OpenFoodFactsApi();
+  bool _isLookingUpBarcode = false;
+  String? _barcodeError;
 
   void _onTabSelected(int index) {
     if (_currentIndex == index) return;
@@ -150,6 +163,59 @@ class _DetectionHomeState extends State<_DetectionHome> {
     viewModel.reset();
   }
 
+  /// Scanner → registry → result.
+  ///
+  /// Note what happens when Open Food Facts has never heard of the barcode:
+  /// the report is still built and still shown. The GS1 prefix decodes offline
+  /// from the digits themselves, so there is a real, attributable answer to
+  /// give even with no database record — and an error page instead would throw
+  /// away the one claim on this path that is genuinely reproducible.
+  Future<void> _startBarcodeScan() async {
+    final navigator = Navigator.of(context);
+
+    final barcode = await navigator.push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (barcode == null || !mounted) return;
+
+    setState(() {
+      _isLookingUpBarcode = true;
+      _barcodeError = null;
+    });
+
+    Map<String, dynamic>? product;
+    String? failure;
+    try {
+      product = await _openFoodFacts.fetchProduct(barcode);
+    } on AppException catch (error) {
+      // A lookup that failed is not a lookup that came back empty, and the
+      // two must not collapse into the same screen: "not in the database" is
+      // an answer, "the network is down" is a retry.
+      failure = error.message;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isLookingUpBarcode = false;
+      _barcodeError = failure;
+    });
+    if (failure != null) return;
+
+    await navigator.push(
+      MaterialPageRoute(
+        builder: (_) => ProductReportView(
+          report: reportFromBarcode(barcode, openFoodFactsProduct: product),
+          onClose: () => Navigator.of(context).pop(),
+          // Saving is deliberately absent rather than disabled. The stored
+          // record predates the badges and has nowhere to put them, so a
+          // saved barcode scan would reopen as Estimated — the Verified
+          // reading would be silently downgraded by the round trip. Better to
+          // not offer it than to lose the one thing this path is good at.
+        ),
+      ),
+    );
+  }
+
   Future<void> _retakeAfterConfirm() async {
     context.read<DetectionViewModel>().cancelPendingAnalysis();
     await _startPhotoScan(fromGallery: false);
@@ -169,8 +235,15 @@ class _DetectionHomeState extends State<_DetectionHome> {
               children: [
                 _ScanTab(
                   viewModel: viewModel,
+                  mode: _scanMode,
+                  barcodeError: _barcodeError,
+                  onModeChanged: (mode) => setState(() {
+                    _scanMode = mode;
+                    _barcodeError = null;
+                  }),
                   onOpenCamera: () => _startPhotoScan(fromGallery: false),
                   onPickFromGallery: () => _startPhotoScan(fromGallery: true),
+                  onScanBarcode: _startBarcodeScan,
                   onConfirm: _confirmAndShowResult,
                   onRetake: _retakeAfterConfirm,
                 ),
@@ -179,17 +252,19 @@ class _DetectionHomeState extends State<_DetectionHome> {
                 const OriginPreferencesTab(),
               ],
             ),
-            if (viewModel.isLoading) const AnalyzingOverlay(),
+            if (viewModel.isLoading) const AnalyzingOverlay.photo(),
+            if (_isLookingUpBarcode) const AnalyzingOverlay.barcode(),
           ],
         ),
       ),
-      bottomNavigationBar:
-          viewModel.isLoading || viewModel.isAwaitingConfirmation
-              ? null
-              : DetectionNavBar(
-                  currentIndex: _currentIndex,
-                  onTap: _onTabSelected,
-                ),
+      bottomNavigationBar: viewModel.isLoading ||
+              viewModel.isAwaitingConfirmation ||
+              _isLookingUpBarcode
+          ? null
+          : DetectionNavBar(
+              currentIndex: _currentIndex,
+              onTap: _onTabSelected,
+            ),
     );
   }
 }
@@ -198,15 +273,23 @@ class _DetectionHomeState extends State<_DetectionHome> {
 class _ScanTab extends StatelessWidget {
   const _ScanTab({
     required this.viewModel,
+    required this.mode,
+    required this.barcodeError,
+    required this.onModeChanged,
     required this.onOpenCamera,
     required this.onPickFromGallery,
+    required this.onScanBarcode,
     required this.onConfirm,
     required this.onRetake,
   });
 
   final DetectionViewModel viewModel;
+  final ScanMode mode;
+  final String? barcodeError;
+  final ValueChanged<ScanMode> onModeChanged;
   final VoidCallback onOpenCamera;
   final VoidCallback onPickFromGallery;
+  final VoidCallback onScanBarcode;
   final VoidCallback onConfirm;
   final VoidCallback onRetake;
 
@@ -222,18 +305,27 @@ class _ScanTab extends StatelessWidget {
       );
     }
 
-    final error = viewModel.errorMessage;
-    if (!viewModel.isLoading && error != null) {
+    final error = barcodeError ??
+        (viewModel.isLoading ? null : viewModel.errorMessage);
+    if (error != null) {
+      final isBarcode = barcodeError != null;
       return DetectionErrorView(
         message: error,
-        onRetry: onOpenCamera,
+        onRetry: isBarcode ? onScanBarcode : onOpenCamera,
         onPickFromGallery: onPickFromGallery,
+        retryLabel: isBarcode ? 'Scan again' : 'Try again',
+        retryIcon: isBarcode
+            ? Icons.qr_code_scanner
+            : Icons.photo_camera_outlined,
       );
     }
 
     return ScanHomeView(
+      mode: mode,
+      onModeChanged: onModeChanged,
       onOpenCamera: onOpenCamera,
       onPickFromGallery: onPickFromGallery,
+      onScanBarcode: onScanBarcode,
       isBusy: viewModel.isLoading,
     );
   }

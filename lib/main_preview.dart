@@ -210,6 +210,14 @@ final _partlyKnown = ProductReport(
     provenance: Provenance.estimated,
     source: 'Derived from a brand that was itself only recognised from a photo',
   ),
+  // Present only on the photo path, because only the photo path asks. A
+  // barcode lookup has nothing to say about tax residency and drops the row
+  // rather than answering Unknown — see ProductReport.taxJurisdiction.
+  taxJurisdiction: const ProvenanceClaim(
+    value: 'Denmark',
+    provenance: Provenance.estimated,
+    source: 'Derived from a brand that was itself only recognised from a photo',
+  ),
 );
 
 /// A misread barcode. The checksum fails, so nothing earns a Verified badge —

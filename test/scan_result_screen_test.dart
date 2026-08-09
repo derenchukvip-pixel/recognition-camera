@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recognition_camera/domain/models/recognition_result.dart';
+import 'package:recognition_camera/domain/models/report_from_barcode.dart';
 import 'package:recognition_camera/domain/models/report_from_recognition.dart';
 import 'package:recognition_camera/presentation/report/product_report_view.dart';
 
@@ -118,5 +119,32 @@ void main() {
     expect(_badge('VERIFIED'), findsNothing);
     expect(_badge('ESTIMATED'), findsNothing);
     expect(_badge('UNKNOWN'), findsWidgets);
+  });
+
+  testWidgets('a barcode scan shows the digits, never a photo frame',
+      (tester) async {
+    var imageBuilderCalled = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProductReportView(
+          report: reportFromBarcode('5702016616545'),
+          // Supplied on purpose. The view must ignore it, because this scan
+          // has no photo: an earlier build rendered an empty frame here and
+          // implied the app had looked at a picture it never had.
+          imageBuilder: (_) {
+            imageBuilderCalled = true;
+            return const ColoredBox(color: Color(0xFFEEEEEE));
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(imageBuilderCalled, isFalse);
+    expect(find.text('SCANNED BARCODE'), findsOneWidget);
+    expect(find.text('5702016616545'), findsOneWidget);
+    expect(_badge('VERIFIED'), findsWidgets);
+    expect(find.text('Denmark'), findsOneWidget);
   });
 }
