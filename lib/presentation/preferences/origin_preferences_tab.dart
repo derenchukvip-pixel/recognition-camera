@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/config/origin_preferences.dart';
+import '../common/tab_scaffold.dart';
+import '../design/tokens.dart';
 import 'origin_preferences_view_model.dart';
 
 class OriginPreferencesTab extends StatefulWidget {
@@ -12,304 +14,325 @@ class OriginPreferencesTab extends StatefulWidget {
 }
 
 class _OriginPreferencesTabState extends State<OriginPreferencesTab> {
-  static const Color _primaryBlue = Color(0xFF052F61);
-  static const Color _alignedGreen = Color(0xFF1A7F4A);
-  static const Color _warningRed = Color(0xFFB11C1C);
-
-  final TextEditingController _alignedController = TextEditingController();
-  final TextEditingController _lessAlignedController = TextEditingController();
-  final FocusNode _alignedFocus = FocusNode();
-  final FocusNode _lessAlignedFocus = FocusNode();
+  final TextEditingController _preferredController = TextEditingController();
+  final TextEditingController _avoidedController = TextEditingController();
+  final FocusNode _preferredFocus = FocusNode();
+  final FocusNode _avoidedFocus = FocusNode();
 
   @override
   void dispose() {
-    _alignedController.dispose();
-    _lessAlignedController.dispose();
-    _alignedFocus.dispose();
-    _lessAlignedFocus.dispose();
+    _preferredController.dispose();
+    _avoidedController.dispose();
+    _preferredFocus.dispose();
+    _avoidedFocus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<OriginPreferencesViewModel>();
-    final alignedSuggestions = _filteredSuggestions(
-      _alignedController.text,
-      viewModel,
-    );
-    final lessSuggestions = _filteredSuggestions(
-      _lessAlignedController.text,
-      viewModel,
-    );
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.translucent,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: TabScaffold(
+        title: 'Preferences',
+        subtitle: 'Which origins you want pointed out',
         child: ListView(
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.xxl,
+          ),
           children: [
-            const SizedBox(height: 12),
-            const Align(
-              alignment: Alignment.topRight,
-              child: SizedBox(height: 34),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Origin Preferences',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: _primaryBlue,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Customize country priorities to match your values',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.black54,
-                  ),
-            ),
-            const SizedBox(height: 20),
+            const _WhatThisDoes(),
+            const SizedBox(height: AppSpacing.lg),
             _PreferenceSection(
-              label: 'Value aligned\ncountries',
-              controller: _alignedController,
-              focusNode: _alignedFocus,
-              suggestions: alignedSuggestions,
+              title: 'Countries you prefer',
+              hint: 'A result that names one of these will point it out.',
+              accent: AppColors.verified,
+              controller: _preferredController,
+              focusNode: _preferredFocus,
+              suggestions: _suggestions(_preferredController.text, viewModel),
               onQueryChanged: (_) => setState(() {}),
               onSelected: (country) async {
                 await viewModel.addAligned(country);
-                _alignedController.clear();
-                _alignedFocus.requestFocus();
-                setState(() {});
+                _preferredController.clear();
+                if (mounted) setState(() {});
               },
-              chips: viewModel.aligned,
-              chipColor: _alignedGreen,
+              countries: viewModel.aligned,
               onRemove: viewModel.removeAligned,
+              emptyHint: 'No countries yet. Add one to have it pointed out.',
             ),
-            const SizedBox(height: 16),
-            const Divider(color: Color(0xFF1A497F), height: 24),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             _PreferenceSection(
-              label: 'Less aligned\ncountries',
-              controller: _lessAlignedController,
-              focusNode: _lessAlignedFocus,
-              suggestions: lessSuggestions,
+              title: 'Countries you would rather avoid',
+              hint: 'Pointed out the same way, so you can decide for yourself.',
+              accent: AppColors.negative,
+              controller: _avoidedController,
+              focusNode: _avoidedFocus,
+              suggestions: _suggestions(_avoidedController.text, viewModel),
               onQueryChanged: (_) => setState(() {}),
               onSelected: (country) async {
                 await viewModel.addLessAligned(country);
-                _lessAlignedController.clear();
-                _lessAlignedFocus.requestFocus();
-                setState(() {});
+                _avoidedController.clear();
+                if (mounted) setState(() {});
               },
-              chips: viewModel.lessAligned,
-              chipColor: _warningRed,
+              countries: viewModel.lessAligned,
               onRemove: viewModel.removeLessAligned,
+              emptyHint: 'No countries yet.',
             ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  List<String> _filteredSuggestions(
+  List<String> _suggestions(
     String query,
     OriginPreferencesViewModel viewModel,
   ) {
     final normalized = query.trim().toLowerCase();
-    if (normalized.isEmpty) return [];
-    final selected = {
-      ...viewModel.aligned.map((c) => OriginPreferences.normalize(c)),
-      ...viewModel.lessAligned.map((c) => OriginPreferences.normalize(c)),
+    if (normalized.isEmpty) return const [];
+    final chosen = {
+      ...viewModel.aligned.map(OriginPreferences.normalize),
+      ...viewModel.lessAligned.map(OriginPreferences.normalize),
     };
     return OriginPreferences.allCountries
         .where((country) {
-          final normalizedCountry = OriginPreferences.normalize(country);
-          return normalizedCountry.contains(normalized) &&
-              !selected.contains(normalizedCountry);
+          final key = OriginPreferences.normalize(country);
+          return key.contains(normalized) && !chosen.contains(key);
         })
         .take(5)
         .toList();
   }
 }
 
+/// The explanation that keeps this feature from undoing the rest of the app.
+///
+/// A country matching a preference gets marked on the result screen, and a
+/// mark next to a country is very easily read as "confirmed". It is not: it
+/// means the text matched a list the user typed. The provenance badge is the
+/// only thing that says whether the country is reliable, and the two must not
+/// be confused — otherwise the app is back to decorating guesses with ticks.
+class _WhatThisDoes extends StatelessWidget {
+  const _WhatThisDoes();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('HOW THESE LISTS ARE USED', style: AppText.label),
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            'When a scan mentions a country on one of your lists, the result '
+            'points it out.',
+            style: AppText.body,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            'That is a match against your own settings — not a check of '
+            'whether the country is correct. Whether a country can be trusted '
+            'at all is what the Verified, Estimated and Unknown badges are '
+            'for, and they are decided independently of anything here.',
+            style: AppText.caption,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PreferenceSection extends StatelessWidget {
   const _PreferenceSection({
-    required this.label,
+    required this.title,
+    required this.hint,
+    required this.accent,
     required this.controller,
     required this.focusNode,
     required this.suggestions,
     required this.onQueryChanged,
     required this.onSelected,
-    required this.chips,
-    required this.chipColor,
+    required this.countries,
     required this.onRemove,
+    required this.emptyHint,
   });
 
-  final String label;
+  final String title;
+  final String hint;
+  final Color accent;
   final TextEditingController controller;
   final FocusNode focusNode;
   final List<String> suggestions;
   final ValueChanged<String> onQueryChanged;
   final ValueChanged<String> onSelected;
-  final List<String> chips;
-  final Color chipColor;
+  final List<String> countries;
   final ValueChanged<String> onRemove;
-
-  static const Color _primaryBlue = Color(0xFF052F61);
-  static const Color _borderBlue = Color(0xFF1A497F);
-  static const Color _hintBlue = Color(0xFF1A497F);
+  final String emptyHint;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: _primaryBlue,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
-                    ),
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AppText.bodyStrong),
+          const SizedBox(height: AppSpacing.xs),
+          Text(hint, style: AppText.caption),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: controller,
+            focusNode: focusNode,
+            onChanged: onQueryChanged,
+            textInputAction: TextInputAction.search,
+            style: AppText.body,
+            decoration: InputDecoration(
+              hintText: 'Add a country',
+              hintStyle: AppText.body.copyWith(color: AppColors.inkMuted),
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 20,
+                color: AppColors.inkMuted,
+              ),
+              filled: true,
+              fillColor: AppColors.surfaceSubtle,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: 14,
+              ),
+              border: const OutlineInputBorder(
+                borderRadius: AppRadius.cardRadius,
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: AppRadius.cardRadius,
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: AppRadius.cardRadius,
+                borderSide: BorderSide(color: AppColors.brandBright, width: 2),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _SearchField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    onChanged: onQueryChanged,
-                  ),
-                  if (suggestions.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: _borderBlue),
-                        color: Colors.white,
-                      ),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final country = suggestions[index];
-                          return InkWell(
-                            onTap: () => onSelected(country),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              child: Text(country),
-                            ),
-                          );
-                        },
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1, color: Color(0xFFE5E9F2)),
-                        itemCount: suggestions.length,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _borderBlue),
-            color: Colors.white,
           ),
-          child: chips.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  child: Text(
-                    'The countries you add\nwill appear here',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: _hintBlue,
-                          height: 1.35,
-                        ),
+          if (suggestions.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            for (final country in suggestions)
+              _SuggestionRow(
+                country: country,
+                onTap: () => onSelected(country),
+              ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          if (countries.isEmpty)
+            Text(emptyHint, style: AppText.caption)
+          else
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final country in countries)
+                  _CountryChip(
+                    country: country,
+                    accent: accent,
+                    onRemove: () => onRemove(country),
                   ),
-                )
-              : Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: chips
-                      .map(
-                        (country) => Chip(
-                          label: Text(country),
-                          labelStyle: TextStyle(
-                            color: chipColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          deleteIcon:
-                              Icon(Icons.close, size: 18, color: chipColor),
-                          onDeleted: () => onRemove(country),
-                          side: BorderSide(color: chipColor),
-                          backgroundColor: Colors.white,
-                        ),
-                      )
-                      .toList(),
-                ),
-        ),
-      ],
+              ],
+            ),
+        ],
+      ),
     );
   }
 }
 
-class _SearchField extends StatelessWidget {
-  const _SearchField({
-    required this.controller,
-    required this.focusNode,
-    required this.onChanged,
-  });
+class _SuggestionRow extends StatelessWidget {
+  const _SuggestionRow({required this.country, required this.onTap});
 
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final ValueChanged<String> onChanged;
-
-  static const Color _primaryBlue = Color(0xFF052F61);
+  final String country;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      focusNode: focusNode,
-      cursorColor: _primaryBlue,
-      decoration: InputDecoration(
-        isDense: true,
-        hintText: 'Search...',
-        prefixIcon: const Icon(Icons.search, size: 20, color: _primaryBlue),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: _primaryBlue),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: _primaryBlue),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: _primaryBlue, width: 1.6),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: const BorderRadius.all(AppRadius.sm),
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          alignment: Alignment.centerLeft,
+          child: Row(
+            children: [
+              const Icon(Icons.add, size: 18, color: AppColors.brand),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(child: Text(country, style: AppText.body)),
+            ],
+          ),
         ),
       ),
-      onTap: () => focusNode.requestFocus(),
-      onChanged: onChanged,
+    );
+  }
+}
+
+/// A chosen country.
+///
+/// The accent tints the border and the label, never the whole chip: a solid
+/// green or red block here would look like the provenance badges, which are
+/// the one thing on screen that colour is reserved for.
+class _CountryChip extends StatelessWidget {
+  const _CountryChip({
+    required this.country,
+    required this.accent,
+    required this.onRemove,
+  });
+
+  final String country;
+  final Color accent;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.xs),
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.pillRadius,
+        border: Border.all(color: accent.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(country, style: AppText.body.copyWith(color: accent)),
+          const SizedBox(width: AppSpacing.xs),
+          Semantics(
+            button: true,
+            label: 'Remove $country',
+            child: InkResponse(
+              onTap: onRemove,
+              radius: 20,
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: Icon(Icons.close, size: 16, color: accent),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
