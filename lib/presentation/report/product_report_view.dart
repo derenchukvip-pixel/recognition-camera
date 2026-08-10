@@ -5,6 +5,16 @@ import '../../domain/provenance.dart';
 import '../design/provenance_badge.dart';
 import '../design/tokens.dart';
 
+/// The product name and its badge.
+const Key reportHeadlineKey = Key('report-headline');
+
+/// The card of `label → value → badge` rows.
+const Key reportClaimsKey = Key('report-claims');
+
+/// The "how to read this" block, which names every badge by definition and so
+/// contains all three words regardless of what this particular scan found.
+const Key provenanceLegendKey = Key('provenance-legend');
+
 /// The result screen.
 ///
 /// Pure: it takes a [ProductReport] and an optional image builder, and reaches
@@ -17,12 +27,20 @@ class ProductReportView extends StatelessWidget {
     this.imageBuilder,
     this.onClose,
     this.onSave,
+    this.isSaved = false,
   });
 
   final ProductReport report;
   final WidgetBuilder? imageBuilder;
   final VoidCallback? onClose;
+
+  /// Null hides the action entirely rather than disabling it. A barcode scan
+  /// has nowhere to be saved to without losing its provenance — the stored
+  /// record predates the badges and cannot hold them — and a greyed-out
+  /// bookmark would advertise a feature that is not coming back on.
   final VoidCallback? onSave;
+
+  final bool isSaved;
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +65,15 @@ class ProductReportView extends StatelessWidget {
               if (onSave != null)
                 IconButton(
                   onPressed: onSave,
-                  icon: const Icon(Icons.bookmark_border, color: AppColors.ink),
-                  tooltip: 'Save',
+                  icon: Icon(
+                    isSaved ? Icons.bookmark : Icons.bookmark_border,
+                    color: isSaved ? AppColors.brand : AppColors.ink,
+                  ),
+                  // Filled vs outlined already carries the state; the label
+                  // says which way the tap goes, because an icon that means
+                  // "saved" and an icon that means "save it" look the same to
+                  // a screen reader otherwise.
+                  tooltip: isSaved ? 'Remove from saved' : 'Save',
                 ),
             ],
             title: const Text('Scan result', style: AppText.bodyStrong),
@@ -74,9 +99,17 @@ class ProductReportView extends StatelessWidget {
                   else if (report.source == ScanSource.barcode)
                     _BarcodeHeader(barcode: report.barcode!),
                   const SizedBox(height: AppSpacing.lg),
-                  _Headline(report: report),
+                  // The three regions are keyed because a badge means
+                  // something different in each of them: in the headline and
+                  // the claim card it is an assertion about this product, in
+                  // the legend below it is a definition. A test that searches
+                  // the whole screen for "VERIFIED" cannot tell the two apart,
+                  // and the legend would mask exactly the regression the tests
+                  // exist to catch.
+                  _Headline(key: reportHeadlineKey, report: report),
                   const SizedBox(height: AppSpacing.lg),
                   _ClaimCard(
+                    key: reportClaimsKey,
                     rows: [
                       _ClaimRow(
                         label: 'Brand registered in',
@@ -90,10 +123,20 @@ class ProductReportView extends StatelessWidget {
                         label: 'Headquarters',
                         claim: report.headquarters,
                       ),
+                      // Only when the reading actually covered it. A barcode
+                      // lookup says nothing about tax residency, and an
+                      // Unknown badge on a question that was never asked
+                      // reads as "we checked" — see
+                      // ProductReport.taxJurisdiction.
+                      if (report.taxJurisdiction != null)
+                        _ClaimRow(
+                          label: 'Profit booked in',
+                          claim: report.taxJurisdiction!,
+                        ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  const _MethodologyNote(),
+                  const _MethodologyNote(key: provenanceLegendKey),
                 ],
               ),
             ),
@@ -189,7 +232,7 @@ class _BarcodeHeader extends StatelessWidget {
 }
 
 class _Headline extends StatelessWidget {
-  const _Headline({required this.report});
+  const _Headline({super.key, required this.report});
 
   final ProductReport report;
 
@@ -235,7 +278,7 @@ class _Headline extends StatelessWidget {
 }
 
 class _ClaimCard extends StatelessWidget {
-  const _ClaimCard({required this.rows});
+  const _ClaimCard({super.key, required this.rows});
 
   final List<_ClaimRow> rows;
 
@@ -324,7 +367,7 @@ class _ClaimRow extends StatelessWidget {
 }
 
 class _MethodologyNote extends StatelessWidget {
-  const _MethodologyNote();
+  const _MethodologyNote({super.key});
 
   @override
   Widget build(BuildContext context) {

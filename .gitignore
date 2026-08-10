@@ -45,3 +45,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Evaluation image cache — the manifest is committed, the photographs are not.
+# They are CC-BY-SA and belong to their photographers; run_eval.py fetches
+# them from Open Food Facts and records a digest of each one.
+/eval/images/

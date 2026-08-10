@@ -72,4 +72,45 @@ Production origin and headquarters:
 
     expect(result.companyName, 'Oral-B');
   });
+
+  test('parses the current backend format, which names the on-pack brand', () {
+    const response = """
+Nutella Hazelnut Spread
+
+Production origin and headquarters:
+- Estimated production origin of Nutella Hazelnut Spread: Italy, France
+- Brand: Nutella
+- Brand owner: Ferrero
+- Country of the HQ: Luxembourg
+- Country where the company pays taxes and receives profit: Luxembourg
+""";
+
+    final result = RecognitionResult.fromResponse(response);
+
+    expect(result.productName, 'Nutella Hazelnut Spread');
+    // The brand as printed on the pack, which is what the result screen
+    // shows under "by ...". The backend reports the owning company on its own
+    // line; conflating the two is what invalidated the first brand metric in
+    // eval/.
+    expect(result.companyName, 'Nutella');
+    expect(result.productionOrigin, 'Italy, France');
+    expect(result.hqCountry, 'Luxembourg');
+  });
+
+  test('a field label is never mistaken for the product name', () {
+    // Happens when the model omits the name line. Before the guard the first
+    // label became the product, and the screen showed a product called
+    // "Brand: LU" with a straight face.
+    const response = """
+Production origin and headquarters:
+- Brand: LU
+- Brand owner: Mondelez
+- Country of the HQ: United States
+""";
+
+    final result = RecognitionResult.fromResponse(response);
+
+    expect(result.productName, isNull);
+    expect(result.companyName, isNull);
+  });
 }

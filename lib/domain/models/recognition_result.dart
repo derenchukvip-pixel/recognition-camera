@@ -183,10 +183,25 @@ class RecognitionResult {
     return null;
   }
 
+  /// A field label, whichever of the backend's keys it uses.
+  ///
+  /// Matched on the colon rather than on the word: "Brand: LU" is a label,
+  /// "Brand X Cereal" is a product. Without the colon this would swallow
+  /// every product whose name happens to start with one of these words.
+  static final RegExp _labelledField = RegExp(
+    r'^(brand owner|brand|company name|company|manufacturer)\s*:',
+    caseSensitive: false,
+  );
+
   static bool _isInvalidProductLine(String? value) {
     if (value == null) return true;
     final normalized = value.trim().toLowerCase();
     if (normalized.isEmpty) return true;
+    // The product name is picked as the first line that is not a field, so a
+    // label reaching this check would be rendered as the product. It only
+    // bites when the model omits the name line — rare, and silent when it
+    // happens, which is the combination worth a guard.
+    if (_labelledField.hasMatch(normalized)) return true;
     if (normalized.startsWith('estimated production origin')) return true;
     if (normalized.contains('production origin')) return true;
     if (normalized.contains('origin and headquarters')) return true;

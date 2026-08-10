@@ -1,0 +1,362 @@
+{
+  "source": "Open Food Facts",
+  "source_url": "https://world.openfoodfacts.org",
+  "data_licence": "Open Database License (ODbL) 1.0",
+  "image_licence": "Creative Commons Attribution-ShareAlike 3.0",
+  "selection": "Descending unique_scans_n over products with a selected front photo, at most 2 per brand; records with unusable reference labels dropped. Mostly European and North African groceries — not a sample of products in general. See build_dataset.py.",
+  "max_per_brand": 2,
+  "built_at": "2026-08-09",
+  "count": 50,
+  "items": [
+    {
+      "barcode": "6111246721261",
+      "expected_name": "Fromage Blanc Nature",
+      "expected_brand": "Milky Food Professional",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/124/672/1261/front_fr.118.400.jpg",
+      "unique_scans": 3410
+    },
+    {
+      "barcode": "6111035000058",
+      "expected_name": "Eau minérale naturelle",
+      "expected_brand": "sidi ali",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/103/500/0058/front_en.134.400.jpg",
+      "unique_scans": 2397
+    },
+    {
+      "barcode": "6111266962187",
+      "expected_name": "Lait de la ferme jaouda",
+      "expected_brand": "Jaouda",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/126/696/2187/front_fr.56.400.jpg",
+      "unique_scans": 1945
+    },
+    {
+      "barcode": "6111242106949",
+      "expected_name": "Jben",
+      "expected_brand": "Jaouda",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/124/210/6949/front_fr.77.400.jpg",
+      "unique_scans": 1883
+    },
+    {
+      "barcode": "3274080005003",
+      "expected_name": "isabelle",
+      "expected_brand": "Cristaline",
+      "image_url": "https://images.openfoodfacts.org/images/products/327/408/000/5003/front_en.797.400.jpg",
+      "unique_scans": 1814
+    },
+    {
+      "barcode": "7622210449283",
+      "expected_name": "Prince Goût Chocolat au blé complet",
+      "expected_brand": "Mondelez",
+      "image_url": "https://images.openfoodfacts.org/images/products/762/221/044/9283/front_en.605.400.jpg",
+      "unique_scans": 1744
+    },
+    {
+      "barcode": "6111128000071",
+      "expected_name": "Ain Saïss",
+      "expected_brand": "Danone",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/112/800/0071/front_fr.62.400.jpg",
+      "unique_scans": 1570
+    },
+    {
+      "barcode": "3760049790214",
+      "expected_name": "Pain De Mie Bio",
+      "expected_brand": "La Boulangère, La Boulangère Bio",
+      "image_url": "https://images.openfoodfacts.org/images/products/376/004/979/0214/front_en.262.400.jpg",
+      "unique_scans": 1328
+    },
+    {
+      "barcode": "6111246721278",
+      "expected_name": "Cream cheese",
+      "expected_brand": "Original",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/124/672/1278/front_en.4.400.jpg",
+      "unique_scans": 1302
+    },
+    {
+      "barcode": "6111035502828",
+      "expected_name": "Eau minéral naturelle",
+      "expected_brand": "Ain atlas",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/103/550/2828/front_fr.3.400.jpg",
+      "unique_scans": 1199
+    },
+    {
+      "barcode": "5449000054227",
+      "expected_name": "Coca-Cola Original Taste",
+      "expected_brand": "Coca Cola Life, Coca-Cola",
+      "image_url": "https://images.openfoodfacts.org/images/products/544/900/005/4227/front_en.543.400.jpg",
+      "unique_scans": 1188
+    },
+    {
+      "barcode": "3329770077003",
+      "expected_name": "Skyr nature 0%",
+      "expected_brand": "Yoplait",
+      "image_url": "https://images.openfoodfacts.org/images/products/332/977/007/7003/front_en.164.400.jpg",
+      "unique_scans": 1149
+    },
+    {
+      "barcode": "3760049798609",
+      "expected_name": "Pain de mie grandes tranches Seigle & Graines 500g",
+      "expected_brand": "la Boulangère",
+      "image_url": "https://images.openfoodfacts.org/images/products/376/004/979/8609/front_en.140.400.jpg",
+      "unique_scans": 1103
+    },
+    {
+      "barcode": "3168930010265",
+      "expected_name": "cruesly mélange de noix",
+      "expected_brand": "Quaker",
+      "image_url": "https://images.openfoodfacts.org/images/products/316/893/001/0265/front_en.297.400.jpg",
+      "unique_scans": 1094
+    },
+    {
+      "barcode": "06175700",
+      "expected_name": "Tartines craquantes au sarrasin imp",
+      "expected_brand": "Ekibio, Le pain des Fleurs",
+      "image_url": "https://images.openfoodfacts.org/images/products/000/000/617/5700/front_fr.90.400.jpg",
+      "unique_scans": 1094
+    },
+    {
+      "barcode": "3175680011480",
+      "expected_name": "Sésame",
+      "expected_brand": "Gerblé",
+      "image_url": "https://images.openfoodfacts.org/images/products/317/568/001/1480/front_fr.325.400.jpg",
+      "unique_scans": 1081
+    },
+    {
+      "barcode": "3046920022651",
+      "expected_name": "Noir Intense",
+      "expected_brand": "Lindt",
+      "image_url": "https://images.openfoodfacts.org/images/products/304/692/002/2651/front_en.159.400.jpg",
+      "unique_scans": 1078
+    },
+    {
+      "barcode": "3017620422003",
+      "expected_name": "Nutella",
+      "expected_brand": "Nutella, Ferrero, Yum yum",
+      "image_url": "https://images.openfoodfacts.org/images/products/301/762/042/2003/front_en.879.400.jpg",
+      "unique_scans": 1064
+    },
+    {
+      "barcode": "3046920022606",
+      "expected_name": "Excellence 85% cacao",
+      "expected_brand": "Lindt",
+      "image_url": "https://images.openfoodfacts.org/images/products/304/692/002/2606/front_en.102.400.jpg",
+      "unique_scans": 1057
+    },
+    {
+      "barcode": "3760020507350",
+      "expected_name": "Pur beurre de cacahuète",
+      "expected_brand": "Jardin Bio étic",
+      "image_url": "https://images.openfoodfacts.org/images/products/376/002/050/7350/front_en.403.400.jpg",
+      "unique_scans": 1057
+    },
+    {
+      "barcode": "6111203006653",
+      "expected_name": "La Hollandaise Cheddar",
+      "expected_brand": "la Hollandaise",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/120/300/6653/front_ar.14.400.jpg",
+      "unique_scans": 1046
+    },
+    {
+      "barcode": "8052575090254",
+      "expected_name": "Rigoni di Asiago - Nocciolata bio",
+      "expected_brand": "Rigoni di Asiago",
+      "image_url": "https://images.openfoodfacts.org/images/products/805/257/509/0254/front_en.43.400.jpg",
+      "unique_scans": 1043
+    },
+    {
+      "barcode": "3017620425035",
+      "expected_name": "Nutella",
+      "expected_brand": "Nutella",
+      "image_url": "https://images.openfoodfacts.org/images/products/301/762/042/5035/front_en.583.400.jpg",
+      "unique_scans": 1042
+    },
+    {
+      "barcode": "6111035003035",
+      "expected_name": "Oulmes natural carbonated water",
+      "expected_brand": "Les eaux minérales d'Oulmès S.A.",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/103/500/3035/front_en.61.400.jpg",
+      "unique_scans": 1034
+    },
+    {
+      "barcode": "6111031005064",
+      "expected_name": "Tonik",
+      "expected_brand": "tonik",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/103/100/5064/front_fr.56.400.jpg",
+      "unique_scans": 1030
+    },
+    {
+      "barcode": "3229820100234",
+      "expected_name": "Fourrés Chocolat Noir",
+      "expected_brand": "Bjorg",
+      "image_url": "https://images.openfoodfacts.org/images/products/322/982/010/0234/front_fr.246.400.jpg",
+      "unique_scans": 1020
+    },
+    {
+      "barcode": "3228857002344",
+      "expected_name": "Pain de mie american sandwich complet sans sucres ajoutés 600g",
+      "expected_brand": "Harrys",
+      "image_url": "https://images.openfoodfacts.org/images/products/322/885/700/2344/front_fr.117.400.jpg",
+      "unique_scans": 1017
+    },
+    {
+      "barcode": "7311070032611",
+      "expected_name": "KRISPROLLS Complets",
+      "expected_brand": "KRISPROLLS",
+      "image_url": "https://images.openfoodfacts.org/images/products/731/107/003/2611/front_en.91.400.jpg",
+      "unique_scans": 1013
+    },
+    {
+      "barcode": "5449000147417",
+      "expected_name": "Cappy PULPY",
+      "expected_brand": "Cappy, Crappy",
+      "image_url": "https://images.openfoodfacts.org/images/products/544/900/014/7417/front_en.73.400.jpg",
+      "unique_scans": 999
+    },
+    {
+      "barcode": "5411188112709",
+      "expected_name": "Geröstete Mandel Ohne Zucker",
+      "expected_brand": "alpro",
+      "image_url": "https://images.openfoodfacts.org/images/products/541/118/811/2709/front_en.927.400.jpg",
+      "unique_scans": 989
+    },
+    {
+      "barcode": "3168930163480",
+      "expected_name": "Alvalle Gazpacho l'original",
+      "expected_brand": "ALVALLé",
+      "image_url": "https://images.openfoodfacts.org/images/products/316/893/016/3480/front_en.153.400.jpg",
+      "unique_scans": 984
+    },
+    {
+      "barcode": "3029330022428",
+      "expected_name": "14 Maxi Tranches complet sans sucres ajoutés",
+      "expected_brand": "Jacquet",
+      "image_url": "https://images.openfoodfacts.org/images/products/302/933/002/2428/front_fr.311.400.jpg",
+      "unique_scans": 959
+    },
+    {
+      "barcode": "42104964",
+      "expected_name": "Ciel 33cl",
+      "expected_brand": "Ciel",
+      "image_url": "https://images.openfoodfacts.org/images/products/000/004/210/4964/front_en.36.400.jpg",
+      "unique_scans": 947
+    },
+    {
+      "barcode": "3760049794298",
+      "expected_name": "Pain de mie Bio grandes tranches céréales & graines 500g",
+      "expected_brand": "La Boulangère Bio, La boulangere",
+      "image_url": "https://images.openfoodfacts.org/images/products/376/004/979/4298/front_fr.212.400.jpg",
+      "unique_scans": 942
+    },
+    {
+      "barcode": "7300400481595",
+      "expected_name": "AUTHENTIQUE",
+      "expected_brand": "wasa, WAZA",
+      "image_url": "https://images.openfoodfacts.org/images/products/730/040/048/1595/front_fr.265.400.jpg",
+      "unique_scans": 934
+    },
+    {
+      "barcode": "6111035001659",
+      "expected_name": "Ain Atlas",
+      "expected_brand": "Aïn Atlas",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/103/500/1659/front_fr.21.400.jpg",
+      "unique_scans": 916
+    },
+    {
+      "barcode": "7300400481588",
+      "expected_name": "Fibres",
+      "expected_brand": "wasa",
+      "image_url": "https://images.openfoodfacts.org/images/products/730/040/048/1588/front_en.269.400.jpg",
+      "unique_scans": 912
+    },
+    {
+      "barcode": "8052575090230",
+      "expected_name": "Nocciolata",
+      "expected_brand": "Rigoni Di Asiago",
+      "image_url": "https://images.openfoodfacts.org/images/products/805/257/509/0230/front_en.58.400.jpg",
+      "unique_scans": 904
+    },
+    {
+      "barcode": "3327272107969",
+      "expected_name": "Menguy's Peanut 100%",
+      "expected_brand": "Menguy's",
+      "image_url": "https://images.openfoodfacts.org/images/products/332/727/210/7969/front_en.59.400.jpg",
+      "unique_scans": 878
+    },
+    {
+      "barcode": "3229820160672",
+      "expected_name": "Croustillant Chocolat",
+      "expected_brand": "Bjorg",
+      "image_url": "https://images.openfoodfacts.org/images/products/322/982/016/0672/front_fr.340.400.jpg",
+      "unique_scans": 868
+    },
+    {
+      "barcode": "8076809513753",
+      "expected_name": "PESTO alla GENOVESE",
+      "expected_brand": "Barilla",
+      "image_url": "https://images.openfoodfacts.org/images/products/807/680/951/3753/front_en.347.400.jpg",
+      "unique_scans": 867
+    },
+    {
+      "barcode": "6111246722107",
+      "expected_name": "Frommage fondu",
+      "expected_brand": "REWE Beste Wahl",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/124/672/2107/front_fr.3.400.jpg",
+      "unique_scans": 866
+    },
+    {
+      "barcode": "3175681851849",
+      "expected_name": "Pomme Noisette",
+      "expected_brand": "Gerblé",
+      "image_url": "https://images.openfoodfacts.org/images/products/317/568/185/1849/front_fr.267.400.jpg",
+      "unique_scans": 849
+    },
+    {
+      "barcode": "3155250358788",
+      "expected_name": "Margarine bio doux tartine & cuisson",
+      "expected_brand": "Primevère",
+      "image_url": "https://images.openfoodfacts.org/images/products/315/525/035/8788/front_en.166.400.jpg",
+      "unique_scans": 849
+    },
+    {
+      "barcode": "5449000061515",
+      "expected_name": "Ciel",
+      "expected_brand": "THE COCA-COLA COMPANY",
+      "image_url": "https://images.openfoodfacts.org/images/products/544/900/006/1515/front_fr.46.400.jpg",
+      "unique_scans": 848
+    },
+    {
+      "barcode": "3155251205296",
+      "expected_name": "Tartine Doux",
+      "expected_brand": "Primevère",
+      "image_url": "https://images.openfoodfacts.org/images/products/315/525/120/5296/front_en.149.400.jpg",
+      "unique_scans": 831
+    },
+    {
+      "barcode": "6111128000163",
+      "expected_name": "Ain Saiss Eau Minerale Naturelle",
+      "expected_brand": "Danone",
+      "image_url": "https://images.openfoodfacts.org/images/products/611/112/800/0163/front_fr.63.400.jpg",
+      "unique_scans": 812
+    },
+    {
+      "barcode": "3608580065340",
+      "expected_name": "Pâte à tartiner noisettes et cacao",
+      "expected_brand": "Bonne Maman",
+      "image_url": "https://images.openfoodfacts.org/images/products/360/858/006/5340/front_fr.8.400.jpg",
+      "unique_scans": 786
+    },
+    {
+      "barcode": "5449000214799",
+      "expected_name": "Coke Zero",
+      "expected_brand": "Coca-Cola",
+      "image_url": "https://images.openfoodfacts.org/images/products/544/900/021/4799/front_en.363.400.jpg",
+      "unique_scans": 785
+    },
+    {
+      "barcode": "3480341000674",
+      "expected_name": "Carré Frais 0% - Nature",
+      "expected_brand": "Elle & Vire",
+      "image_url": "https://images.openfoodfacts.org/images/products/348/034/100/0674/front_en.133.400.jpg",
+      "unique_scans": 779
+    }
+  ]
+}

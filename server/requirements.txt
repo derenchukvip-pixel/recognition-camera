@@ -1,9 +1,8 @@
 fastapi
 uvicorn
-pillow
-python-dotenv
-openai==0.28
 python-multipart
-redis
+python-dotenv
+openai>=2,<3
+pillow
 ImageHash
-
+redis
