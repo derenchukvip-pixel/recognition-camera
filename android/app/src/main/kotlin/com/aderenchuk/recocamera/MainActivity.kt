@@ -1,4 +1,4 @@
-package com.example.recognition_camera
+package com.aderenchuk.recocamera
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,6 +1,19 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+    <!-- The camera plugin declares RECORD_AUDIO in its own manifest, so it is
+         merged into this app whether or not it is listed here — deleting the
+         line would leave the permission in the shipped APK. This removes it at
+         merge time instead.
+
+         The app never records audio: the only CameraController is built with
+         `enableAudio: false`, and nothing calls video recording. A scanner
+         asking for the microphone is the kind of thing that costs a store
+         review, and it should not be requested just because a dependency
+         happens to support video. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"
+        tools:node="remove"/>
     <application
         android:label="WerWo"
         android:name="${applicationName}"
