@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../core/error/app_error.dart';
 import '../../data/open_food_facts/open_food_facts_api.dart';
 import '../../data/recognition/recognition_api_dio.dart';
+import '../../domain/models/product_report.dart';
 import '../../domain/models/report_from_barcode.dart';
 import '../../domain/models/report_from_recognition.dart';
 import '../barcode/barcode_scanner_screen.dart';
@@ -127,9 +128,9 @@ class _DetectionHomeState extends State<_DetectionHome> {
     // DetectionErrorView for it. Nothing to navigate to.
     if (result == null || imageFile == null) return;
 
+    final report = result.toReport(imagePath: imageFile.path);
     await historyViewModel.addFromResult(
-      productName: result.productName ?? 'Not identified',
-      companyName: result.companyName ?? 'Unknown company',
+      report: report,
       resultText: result.message,
       imageFile: imageFile,
       productionOrigin: result.productionOrigin,
@@ -148,7 +149,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
             ChangeNotifierProvider.value(value: savedViewModel),
           ],
           child: ScanResultScreen(
-            report: result.toReport(imagePath: imageFile.path),
+            report: report,
             imageFile: imageFile,
             result: result,
           ),
@@ -172,6 +173,8 @@ class _DetectionHomeState extends State<_DetectionHome> {
   /// away the one claim on this path that is genuinely reproducible.
   Future<void> _startBarcodeScan() async {
     final navigator = Navigator.of(context);
+    final historyViewModel = context.read<HistoryViewModel>();
+    final savedViewModel = context.read<SavedProductsViewModel>();
 
     final barcode = await navigator.push<String>(
       MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
@@ -201,16 +204,19 @@ class _DetectionHomeState extends State<_DetectionHome> {
     });
     if (failure != null) return;
 
+    final report = reportFromBarcode(barcode, openFoodFactsProduct: product);
+    // No image, and the row is worth keeping anyway: it carries a Verified
+    // registry reading, which is the strongest claim the app can make. The
+    // stored record keeps the badges now, so reopening it from history shows
+    // the same Verified it showed here rather than a downgraded guess.
+    await historyViewModel.addFromResult(report: report);
+
+    if (!mounted) return;
     await navigator.push(
       MaterialPageRoute(
-        builder: (_) => ProductReportView(
-          report: reportFromBarcode(barcode, openFoodFactsProduct: product),
-          onClose: () => Navigator.of(context).pop(),
-          // Saving is deliberately absent rather than disabled. The stored
-          // record predates the badges and has nowhere to put them, so a
-          // saved barcode scan would reopen as Estimated — the Verified
-          // reading would be silently downgraded by the round trip. Better to
-          // not offer it than to lose the one thing this path is good at.
+        builder: (_) => _BarcodeResultRoute(
+          report: report,
+          savedViewModel: savedViewModel,
         ),
       ),
     );
@@ -247,8 +253,10 @@ class _DetectionHomeState extends State<_DetectionHome> {
                   onConfirm: _confirmAndShowResult,
                   onRetake: _retakeAfterConfirm,
                 ),
-                const SavedTab(),
-                const HistoryTab(),
+                // The empty states offer a way out, and the way out is a tab
+                // switch the tabs cannot perform themselves.
+                SavedTab(onStartScan: () => _onTabSelected(0)),
+                HistoryTab(onStartScan: () => _onTabSelected(0)),
                 const OriginPreferencesTab(),
               ],
             ),
@@ -265,6 +273,36 @@ class _DetectionHomeState extends State<_DetectionHome> {
               currentIndex: _currentIndex,
               onTap: _onTabSelected,
             ),
+    );
+  }
+}
+
+/// The result of a barcode scan.
+///
+/// Its own widget rather than an inline `ProductReportView` so the bookmark
+/// reflects the saved state as it changes: the route sits outside the tab
+/// subtree, so the view model is handed over explicitly and watched here.
+class _BarcodeResultRoute extends StatelessWidget {
+  const _BarcodeResultRoute({
+    required this.report,
+    required this.savedViewModel,
+  });
+
+  final ProductReport report;
+  final SavedProductsViewModel savedViewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider.value(
+      value: savedViewModel,
+      child: Consumer<SavedProductsViewModel>(
+        builder: (context, saved, _) => ProductReportView(
+          report: report,
+          isSaved: saved.isBarcodeSaved(report.barcode),
+          onSave: () => saved.toggleFromResult(report: report),
+          onClose: () => Navigator.of(context).pop(),
+        ),
+      ),
     );
   }
 }

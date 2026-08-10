@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/cache/history_storage.dart';
 import '../../domain/models/history_item.dart';
+import '../../domain/models/product_report.dart';
 
 class HistoryViewModel extends ChangeNotifier {
   HistoryViewModel({HistoryStorage? storage})
@@ -39,18 +40,16 @@ class HistoryViewModel extends ChangeNotifier {
   }
 
   Future<void> addFromResult({
-    required String productName,
-    required String companyName,
-    required String resultText,
-    required File imageFile,
+    required ProductReport report,
+    String resultText = '',
+    File? imageFile,
     String? productionOrigin,
     String? hqCountry,
     String? taxCountry,
   }) async {
     try {
       final item = await _storage.addItem(
-        productName: productName,
-        companyName: companyName,
+        report: report,
         resultText: resultText,
         imageFile: imageFile,
         productionOrigin: productionOrigin,

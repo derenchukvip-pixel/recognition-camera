@@ -123,6 +123,56 @@ class ProductReport {
     );
   }
 
+  /// Serialised so a stored scan keeps its badges.
+  ///
+  /// Before this existed, history recorded five loose strings and the badges
+  /// were reconstructed by an adapter that could only ever answer "estimated
+  /// at best" — the justification for anything stronger had not been kept. A
+  /// barcode scan, whose whole value is a reproducible Verified reading, would
+  /// have come back from disk downgraded to a guess. That is why the app
+  /// refused to save one at all.
+  ///
+  /// [imagePath] is deliberately absent. The photo lives at a path the storage
+  /// layer chose and may later move or be cleaned up by the OS, so the record
+  /// owns it and hands it back through [fromJson].
+  Map<String, dynamic> toJson() => {
+        'version': 1,
+        'barcode': barcode,
+        'productName': productName.toJson(),
+        'brand': brand.toJson(),
+        'registeredIn': registeredIn.toJson(),
+        'manufacturedIn': manufacturedIn.toJson(),
+        'headquarters': headquarters.toJson(),
+        'taxJurisdiction': taxJurisdiction?.toJson(),
+      };
+
+  factory ProductReport.fromJson(
+    Map<String, dynamic> json, {
+    String? imagePath,
+  }) {
+    ProvenanceClaim claim(String key) {
+      final raw = json[key];
+      if (raw is Map) {
+        return ProvenanceClaim.fromJson(Map<String, dynamic>.from(raw));
+      }
+      return const ProvenanceClaim.unknown();
+    }
+
+    final tax = json['taxJurisdiction'];
+    return ProductReport(
+      barcode: json['barcode'] as String?,
+      imagePath: imagePath,
+      productName: claim('productName'),
+      brand: claim('brand'),
+      registeredIn: claim('registeredIn'),
+      manufacturedIn: claim('manufacturedIn'),
+      headquarters: claim('headquarters'),
+      taxJurisdiction: tax is Map
+          ? ProvenanceClaim.fromJson(Map<String, dynamic>.from(tax))
+          : null,
+    );
+  }
+
   /// True when at least one claim is a reproducible fact rather than a guess.
   /// The screen uses this to decide whether to lead with the data or with a
   /// caveat.

@@ -4,6 +4,7 @@ import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../domain/models/history_item.dart';
+import '../../domain/models/product_report.dart';
 
 class HistoryStorage {
   HistoryStorage({Directory? baseDir, Box? box})
@@ -25,27 +26,37 @@ class HistoryStorage {
         .toList();
   }
 
+  /// [imageFile] is nullable because a barcode scan has no photograph. The
+  /// row is still worth keeping — it holds a Verified registry reading, which
+  /// is the strongest claim the app can make — and the result screen renders
+  /// the digits where the photo would go.
   Future<HistoryItem> addItem({
-    required String productName,
-    required String companyName,
+    required ProductReport report,
     required String resultText,
-    required File imageFile,
+    File? imageFile,
     String? productionOrigin,
     String? hqCountry,
     String? taxCountry,
   }) async {
     final items = await fetchAll();
-    final imagePath = await _persistImage(imageFile);
+    final imagePath = imageFile == null ? '' : await _persistImage(imageFile);
     final item = HistoryItem(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      productName: productName,
-      companyName: companyName,
+      // The flat fields are still written so a row stays readable to the
+      // legacy path, but the report is what the screen actually renders.
+      productName: report.productName.hasValue
+          ? report.productName.displayValue
+          : 'Not identified',
+      companyName: report.brand.hasValue
+          ? report.brand.displayValue
+          : 'Unknown company',
       imagePath: imagePath,
-      originalImagePath: imageFile.path,
+      originalImagePath: imageFile?.path ?? '',
       resultText: resultText,
       productionOrigin: productionOrigin,
       hqCountry: hqCountry,
       taxCountry: taxCountry,
+      report: report.toJson(),
       createdAt: DateTime.now(),
     );
     final updated = [item, ...items];

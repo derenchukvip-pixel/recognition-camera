@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../domain/models/product_report.dart';
 import '../../domain/models/saved_product.dart';
 
 class SavedProductsStorage {
@@ -24,43 +25,40 @@ class SavedProductsStorage {
         .toList();
   }
 
+  /// [imageFile] is null for a barcode scan, which has no photograph. Those
+  /// are deduplicated by barcode instead of by image path — the same product
+  /// scanned twice is one saved entry either way.
   Future<SavedProduct> addProduct({
-    required String productName,
-    required String companyName,
-    required File imageFile,
+    required ProductReport report,
+    File? imageFile,
     String? productionOrigin,
     String? hqCountry,
     String? taxCountry,
     String? resultText,
   }) async {
-    final existing = await fetchAll();
-    final matched = existing.firstWhere(
-      (item) =>
-          item.originalImagePath == imageFile.path ||
-          item.imagePath == imageFile.path,
-      orElse: () => SavedProduct(
-        id: '',
-        productName: '',
-        companyName: '',
-        imagePath: '',
-        originalImagePath: '',
-        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-      ),
-    );
-    if (matched.id.isNotEmpty) {
+    final matched = imageFile != null
+        ? await findByImagePath(imageFile.path)
+        : await findByBarcode(report.barcode);
+    if (matched != null) {
       return matched;
     }
-    final imagePath = await _persistImage(imageFile);
+
+    final imagePath = imageFile == null ? '' : await _persistImage(imageFile);
     final product = SavedProduct(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      productName: productName,
-      companyName: companyName,
+      productName: report.productName.hasValue
+          ? report.productName.displayValue
+          : 'Not identified',
+      companyName: report.brand.hasValue
+          ? report.brand.displayValue
+          : 'Unknown company',
       imagePath: imagePath,
-      originalImagePath: imageFile.path,
+      originalImagePath: imageFile?.path ?? '',
       productionOrigin: productionOrigin,
       hqCountry: hqCountry,
       taxCountry: taxCountry,
       resultText: resultText,
+      report: report.toJson(),
       createdAt: DateTime.now(),
     );
     final items = await fetchAll();
@@ -76,6 +74,17 @@ class SavedProductsStorage {
       (item) =>
           item.originalImagePath == imagePath || item.imagePath == imagePath,
     );
+  }
+
+  /// Barcode scans have no image to key on, so they are matched by the digits
+  /// instead. Rows saved before the report was stored have no barcode and are
+  /// skipped rather than treated as a match for everything.
+  Future<SavedProduct?> findByBarcode(String? barcode) async {
+    if (barcode == null || barcode.isEmpty) return null;
+    for (final item in await fetchAll()) {
+      if (item.report?['barcode'] == barcode) return item;
+    }
+    return null;
   }
 
   Future<SavedProduct?> findByImagePath(String imagePath) async {

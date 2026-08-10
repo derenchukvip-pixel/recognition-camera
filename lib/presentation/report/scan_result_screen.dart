@@ -26,9 +26,9 @@ class ScanResultScreen extends StatelessWidget {
   final ProductReport report;
   final File imageFile;
 
-  /// The raw recognition response. Needed only for the save payload: the
-  /// stored record still has the old flat shape, so it is written from the
-  /// original strings rather than from [report].
+  /// The raw recognition response. The badges are saved from [report]; these
+  /// strings ride along so the row also stays readable to the legacy path
+  /// that reconstructs a report from loose text.
   final RecognitionResult result;
 
   @override
@@ -40,8 +40,7 @@ class ScanResultScreen extends StatelessWidget {
       imageBuilder: (_) => Image.file(imageFile, fit: BoxFit.cover),
       isSaved: saved.isSaved(imageFile.path),
       onSave: () => saved.toggleFromResult(
-        productName: result.productName ?? 'Not identified',
-        companyName: result.companyName ?? 'Unknown company',
+        report: report,
         imageFile: imageFile,
         productionOrigin: result.productionOrigin,
         hqCountry: result.hqCountry,

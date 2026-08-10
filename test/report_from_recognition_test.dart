@@ -63,6 +63,20 @@ void main() {
       expect(report.manufacturedIn.provenance, Provenance.unknown);
       expect(report.manufacturedIn.hasValue, isFalse);
     });
+
+    test('a percentage that belongs to the product name survives', () {
+      // The strip targets the origin value, not the whole reply, and this is
+      // the case that proves it has to. Four of the fifty products in the
+      // eval set carry a percentage in their actual name — "Lindt Excellence
+      // 85% Cacao", "Carré Frais 0%" — and a blunter rule would rename them.
+      final report = _report(
+        product: 'Lindt Excellence 85% Cacao',
+        origin: 'France 60%, Germany 40%',
+      );
+
+      expect(report.productName.displayValue, 'Lindt Excellence 85% Cacao');
+      expect(report.manufacturedIn.displayValue, 'France, Germany');
+    });
   });
 
   group('a photo cannot produce a verified claim', () {
