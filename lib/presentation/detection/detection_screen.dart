@@ -18,7 +18,7 @@ import '../history/history_tab.dart';
 import '../history/history_view_model.dart';
 import '../preferences/origin_preferences_tab.dart';
 import '../preferences/origin_preferences_view_model.dart';
-import '../report/product_report_view.dart';
+import '../report/report_screen.dart';
 import '../report/scan_result_screen.dart';
 import '../saved/saved_products_view_model.dart';
 import '../saved/saved_tab.dart';
@@ -127,6 +127,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
     final viewModel = context.read<DetectionViewModel>();
     final historyViewModel = context.read<HistoryViewModel>();
     final savedViewModel = context.read<SavedProductsViewModel>();
+    final preferencesViewModel = context.read<OriginPreferencesViewModel>();
     final navigator = Navigator.of(context);
 
     await viewModel.confirmAnalysis();
@@ -156,6 +157,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
           // by the tabs and must outlive this route.
           providers: [
             ChangeNotifierProvider.value(value: savedViewModel),
+            ChangeNotifierProvider.value(value: preferencesViewModel),
           ],
           child: ScanResultScreen(
             report: report,
@@ -184,6 +186,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
     final navigator = Navigator.of(context);
     final historyViewModel = context.read<HistoryViewModel>();
     final savedViewModel = context.read<SavedProductsViewModel>();
+    final preferencesViewModel = context.read<OriginPreferencesViewModel>();
 
     final barcode = await navigator.push<String>(
       MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
@@ -226,6 +229,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
         builder: (_) => _BarcodeResultRoute(
           report: report,
           savedViewModel: savedViewModel,
+          preferencesViewModel: preferencesViewModel,
         ),
       ),
     );
@@ -295,21 +299,25 @@ class _BarcodeResultRoute extends StatelessWidget {
   const _BarcodeResultRoute({
     required this.report,
     required this.savedViewModel,
+    required this.preferencesViewModel,
   });
 
   final ProductReport report;
   final SavedProductsViewModel savedViewModel;
+  final OriginPreferencesViewModel preferencesViewModel;
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: savedViewModel,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: savedViewModel),
+        ChangeNotifierProvider.value(value: preferencesViewModel),
+      ],
       child: Consumer<SavedProductsViewModel>(
-        builder: (context, saved, _) => ProductReportView(
+        builder: (context, saved, _) => ReportScreen(
           report: report,
           isSaved: saved.isBarcodeSaved(report.barcode),
           onSave: () => saved.toggleFromResult(report: report),
-          onClose: () => Navigator.of(context).pop(),
         ),
       ),
     );

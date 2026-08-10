@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'domain/models/product_report.dart';
 import 'domain/models/report_from_barcode.dart';
+import 'domain/origin_match.dart';
 import 'domain/provenance.dart';
 import 'presentation/common/scan_list_card.dart';
 import 'presentation/common/tab_scaffold.dart';
@@ -12,6 +13,7 @@ import 'presentation/detection/widgets/confirm_photo_view.dart';
 import 'presentation/detection/widgets/detection_nav_bar.dart';
 import 'presentation/detection/widgets/scan_home_view.dart';
 import 'presentation/report/product_report_view.dart';
+import 'presentation/report/share_card.dart';
 import 'presentation/terms/terms_content.dart';
 
 /// Web preview entry point.
@@ -89,6 +91,11 @@ class _PreviewGalleryState extends State<PreviewGallery> {
       slug: 'unreadable',
       label: 'Unreadable',
       build: (_) => _report(_unreadable),
+    ),
+    _Screen(
+      slug: 'share',
+      label: 'Shared image',
+      build: (_) => const _SharePreview(),
     ),
     _Screen(
       slug: 'history',
@@ -209,11 +216,22 @@ class _PhoneFrame extends StatelessWidget {
   }
 }
 
+/// Stands in for the user's own lists. Denmark is on the preferred one, so
+/// the barcode fixture shows a preference mark and a reviewer can see how it
+/// differs from a provenance badge — which is the entire design problem.
+OriginMatch _previewMatch(ProvenanceClaim claim) => matchOrigin(
+      claim.value,
+      preferred: const ['Denmark'],
+      avoided: const ['China'],
+    );
+
 Widget _report(ProductReport report, {bool withPhoto = false}) {
   return ProductReportView(
     report: report,
     onClose: () {},
     onSave: () {},
+    onShare: () {},
+    originMatcher: _previewMatch,
     imageBuilder: withPhoto
         ? (_) => Image.asset(
               'assets/preview/sample-product.jpg',
@@ -292,6 +310,31 @@ class _ConfirmPreview extends StatelessWidget {
         // What YOLOv8n actually returns for this photograph's class of
         // object. A category, which is all it has.
         frameSummary: 'Potted plant in frame',
+      ),
+    );
+  }
+}
+
+/// What actually gets sent when the result is shared.
+///
+/// Scaled down to fit the phone frame; the real thing is 1080 wide. Shown in
+/// the gallery because the point of the card is what it carries — the badge
+/// legend, in the same image — and that is only checkable by looking at it.
+class _SharePreview extends StatelessWidget {
+  const _SharePreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.surfaceSubtle,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: FittedBox(
+            fit: BoxFit.fitWidth,
+            alignment: Alignment.topCenter,
+            child: ShareCard(report: _verified),
+          ),
+        ),
       ),
     );
   }

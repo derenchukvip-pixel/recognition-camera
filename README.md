@@ -17,8 +17,9 @@ gate before the first frame is captured.
 > Dart source.
 
 **▶ [Try it in your browser](https://derenchukvip-pixel.github.io/recognition-camera/)**
-— eight screens, switchable, running against fixtures. Deep links:
+— nine screens, switchable, running against fixtures. Deep links:
 [`?screen=confirm`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=confirm) ·
+[`?screen=share`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=share) ·
 [`?screen=history`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=history) ·
 [`?screen=unreadable`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=unreadable) ·
 [`?screen=consent`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=consent)
@@ -38,6 +39,10 @@ screenshot below is captured headlessly from that same build.
 | Photo result — estimated | Unreadable barcode | History |
 |---|---|---|
 | ![Photo scan](docs/screenshots/report-photo-scan.png) | ![Unreadable](docs/screenshots/report-unreadable.png) | ![History](docs/screenshots/history.png) |
+
+| Shared image | Consent gate | Nothing saved |
+|---|---|---|
+| ![Shared image](docs/screenshots/shared-image.png) | ![Consent](docs/screenshots/consent.png) | ![Empty](docs/screenshots/saved-empty.png) |
 
 **Scan** states what each mode's answer is worth before the scan rather than after it: a
 photo yields an estimate, a barcode yields a lookup that repeats.
@@ -61,6 +66,11 @@ earlier build reported a confident, wrong country here.
 **History** — the badge is in the list, not only on the detail screen. A reproducible
 barcode reading and a model's guess are distinguishable without opening either row.
 
+**Shared image** is what leaves the app when a result is shared, and the legend is in it.
+A screenshot loses whatever scrolled off, and what scrolls off first is how to read the
+badges — leaving a country name under a green tick arriving in a chat as *the app said
+Denmark*.
+
 ## Contents
 
 - [What it does](#what-it-does)
@@ -83,7 +93,8 @@ barcode reading and a model's guess are distinguishable without opening either r
 | Measured accuracy | An eval harness over 50 openly-licensed products — see [Measured accuracy](#measured-accuracy) |
 | Cloud recognition (optional) | Multipart upload to a FastAPI backend, behind an interface |
 | History & saved items | Hive, survives restarts |
-| Origin preferences | User-set preferences persisted locally |
+| Origin preferences | Countries you want flagged, matched against a result's claims — and marked as a match against your settings, never as a verification |
+| Share a result | Rendered to a PNG with the badge legend inside it, then handed to the system share sheet |
 | First-run consent | Explicit disclaimer acceptance before the camera opens |
 
 Seven screens: splash, consent gate, scan (photo or barcode), camera capture, barcode
@@ -314,7 +325,7 @@ flutter build ios --release          # iOS
 
 ```bash
 flutter analyze                          # No issues found!
-flutter test                             # 92 tests
+flutter test                             # 108 tests
 python3 -m unittest discover -s server   # 25 tests
 python3 -m unittest discover -s eval     # 17 tests
 ```
@@ -331,6 +342,8 @@ Verified on Flutter 3.44.9 / Dart 3.12.2.
 | `scan_home_view_test.dart` | The scan-mode switch, and that the visible action is the one that runs |
 | `yolo_postprocess_test.dart` | The tensor decode, NMS and IoU, including the box-inside-a-box case that exposed a real bug |
 | `frame_check_test.dart` | The offline frame check: what it reports, that a stale result cannot overwrite a newer photo, and that a broken detector stays silent |
+| `origin_match_test.dart` | Matching a claim against the user's lists, and that a match is never rendered as a verification |
+| `share_card_test.dart` | The shared image carries the legend, carries no photo, and wears no badge it did not earn |
 | `gs1_prefixes_test.dart` | Prefix table, check digits, special-use ranges |
 | `saved_products_storage_test.dart` | Persistence round-trip, including that badges survive it |
 | `recognition_result_test.dart` | Parsing the backend envelope |

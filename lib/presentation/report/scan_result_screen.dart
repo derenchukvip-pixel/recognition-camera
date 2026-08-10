@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../../domain/models/product_report.dart';
 import '../../domain/models/recognition_result.dart';
 import '../saved/saved_products_view_model.dart';
-import 'product_report_view.dart';
+import 'report_screen.dart';
 
 /// The result of a live photo scan.
 ///
@@ -35,7 +35,7 @@ class ScanResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final saved = context.watch<SavedProductsViewModel>();
 
-    return ProductReportView(
+    return ReportScreen(
       report: report,
       imageBuilder: (_) => Image.file(imageFile, fit: BoxFit.cover),
       isSaved: saved.isSaved(imageFile.path),
@@ -47,7 +47,6 @@ class ScanResultScreen extends StatelessWidget {
         taxCountry: result.taxCountry,
         resultText: result.message,
       ),
-      onClose: () => Navigator.of(context).pop(),
     );
   }
 }

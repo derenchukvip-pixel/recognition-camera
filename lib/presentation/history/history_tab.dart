@@ -8,7 +8,7 @@ import '../common/stored_image.dart';
 import '../common/tab_scaffold.dart';
 import '../design/empty_state.dart';
 import '../design/tokens.dart';
-import '../report/product_report_view.dart';
+import '../report/report_screen.dart';
 import 'history_view_model.dart';
 
 class HistoryTab extends StatelessWidget {
@@ -122,10 +122,10 @@ class _HistoryBody extends StatelessWidget {
   void _open(BuildContext context, HistoryItem item) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (routeContext) => ProductReportView(
+        builder: (routeContext) => ReportScreen(
           report: item.toReport(),
-          imageBuilder: (_) => storedImage(item.imagePath, item.originalImagePath),
-          onClose: () => Navigator.of(routeContext).pop(),
+          imageBuilder: (_) =>
+              storedImage(item.imagePath, item.originalImagePath),
         ),
       ),
     );
