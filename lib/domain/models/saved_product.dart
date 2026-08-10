@@ -1,3 +1,8 @@
+/// A scan the user chose to keep.
+///
+/// Same two-layer shape as [HistoryItem]: flat strings for rows written by
+/// earlier versions, plus [report] carrying the serialised [ProductReport]
+/// with its badges. See `report_from_history.dart` for how the two are read.
 class SavedProduct {
   const SavedProduct({
     required this.id,
@@ -9,6 +14,7 @@ class SavedProduct {
     this.hqCountry,
     this.taxCountry,
     this.resultText,
+    this.report,
     required this.createdAt,
   });
 
@@ -21,6 +27,10 @@ class SavedProduct {
   final String? hqCountry;
   final String? taxCountry;
   final String? resultText;
+
+  /// The serialised [ProductReport]. Null on rows written before it existed.
+  final Map<String, dynamic>? report;
+
   final DateTime createdAt;
 
   Map<String, dynamic> toJson() => {
@@ -33,6 +43,7 @@ class SavedProduct {
         'hqCountry': hqCountry,
         'taxCountry': taxCountry,
         'resultText': resultText,
+        'report': report,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -49,6 +60,10 @@ class SavedProduct {
       hqCountry: json['hqCountry'] as String?,
       taxCountry: json['taxCountry'] as String?,
       resultText: json['resultText'] as String?,
+      // Hive hands back Map<dynamic, dynamic>, not Map<String, dynamic>.
+      report: json['report'] is Map
+          ? Map<String, dynamic>.from(json['report'] as Map)
+          : null,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
     );

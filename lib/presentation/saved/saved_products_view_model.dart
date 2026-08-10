@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import '../../core/cache/saved_products_storage.dart';
+import '../../domain/models/product_report.dart';
 import '../../domain/models/saved_product.dart';
 
 class SavedProductsViewModel extends ChangeNotifier {
@@ -20,20 +21,29 @@ class SavedProductsViewModel extends ChangeNotifier {
   List<SavedProduct> get items => List.unmodifiable(_items);
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool isSaved(String imagePath) => _items.any(
-        (item) =>
-            item.originalImagePath == imagePath || item.imagePath == imagePath,
-      );
+  bool isSaved(String imagePath) => _findByImagePath(imagePath) != null;
+
+  /// A barcode scan has no photo, so it is identified by its digits. Without
+  /// this the bookmark on a barcode result could never show as filled, and
+  /// tapping it twice would save the same product twice.
+  bool isBarcodeSaved(String? barcode) => _findByBarcode(barcode) != null;
 
   SavedProduct? _findByImagePath(String imagePath) {
-    try {
-      return _items.firstWhere(
-        (item) =>
-            item.originalImagePath == imagePath || item.imagePath == imagePath,
-      );
-    } catch (_) {
-      return null;
+    if (imagePath.isEmpty) return null;
+    for (final item in _items) {
+      if (item.originalImagePath == imagePath || item.imagePath == imagePath) {
+        return item;
+      }
     }
+    return null;
+  }
+
+  SavedProduct? _findByBarcode(String? barcode) {
+    if (barcode == null || barcode.isEmpty) return null;
+    for (final item in _items) {
+      if (item.report?['barcode'] == barcode) return item;
+    }
+    return null;
   }
 
   Future<void> _load() async {
@@ -54,19 +64,20 @@ class SavedProductsViewModel extends ChangeNotifier {
   }
 
   Future<void> addFromResult({
-    required String productName,
-    required String companyName,
-    required File imageFile,
+    required ProductReport report,
+    File? imageFile,
     String? productionOrigin,
     String? hqCountry,
     String? taxCountry,
     String? resultText,
   }) async {
     try {
-      if (isSaved(imageFile.path)) return;
+      final alreadySaved = imageFile != null
+          ? isSaved(imageFile.path)
+          : isBarcodeSaved(report.barcode);
+      if (alreadySaved) return;
       final product = await _storage.addProduct(
-        productName: productName,
-        companyName: companyName,
+        report: report,
         imageFile: imageFile,
         productionOrigin: productionOrigin,
         hqCountry: hqCountry,
@@ -83,22 +94,22 @@ class SavedProductsViewModel extends ChangeNotifier {
   }
 
   Future<void> toggleFromResult({
-    required String productName,
-    required String companyName,
-    required File imageFile,
+    required ProductReport report,
+    File? imageFile,
     String? productionOrigin,
     String? hqCountry,
     String? taxCountry,
     String? resultText,
   }) async {
-    final existing = _findByImagePath(imageFile.path);
+    final existing = imageFile != null
+        ? _findByImagePath(imageFile.path)
+        : _findByBarcode(report.barcode);
     if (existing != null) {
       await remove(existing.id);
       return;
     }
     await addFromResult(
-      productName: productName,
-      companyName: companyName,
+      report: report,
       imageFile: imageFile,
       productionOrigin: productionOrigin,
       hqCountry: hqCountry,

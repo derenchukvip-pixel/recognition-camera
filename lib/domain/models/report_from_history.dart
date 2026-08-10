@@ -19,7 +19,9 @@ import 'saved_product.dart';
 /// remove, so [stripFabricatedPercentages] keeps the country names and drops
 /// the digits.
 extension HistoryItemReport on HistoryItem {
-  ProductReport toReport() => _legacyReport(
+  ProductReport toReport() =>
+      _storedReport(report, imagePath, originalImagePath) ??
+      _legacyReport(
         imagePath: imagePath.isNotEmpty ? imagePath : originalImagePath,
         productName: productName,
         companyName: companyName,
@@ -30,7 +32,9 @@ extension HistoryItemReport on HistoryItem {
 }
 
 extension SavedProductReport on SavedProduct {
-  ProductReport toReport() => _legacyReport(
+  ProductReport toReport() =>
+      _storedReport(report, imagePath, originalImagePath) ??
+      _legacyReport(
         imagePath: imagePath.isNotEmpty ? imagePath : originalImagePath,
         productName: productName,
         companyName: companyName,
@@ -38,6 +42,26 @@ extension SavedProductReport on SavedProduct {
         hqCountry: hqCountry,
         taxCountry: taxCountry,
       );
+}
+
+/// The stored report, when the row has one.
+///
+/// The photo path is resolved here rather than being read back from the
+/// report, because the file the record points at is the copy the storage
+/// layer made and the original may already be gone. A barcode row has no
+/// photo at all and correctly gets none — the result screen then shows the
+/// digits instead of an empty frame.
+ProductReport? _storedReport(
+  Map<String, dynamic>? stored,
+  String imagePath,
+  String originalImagePath,
+) {
+  if (stored == null || stored.isEmpty) return null;
+  final path = imagePath.isNotEmpty ? imagePath : originalImagePath;
+  return ProductReport.fromJson(
+    stored,
+    imagePath: path.isNotEmpty ? path : null,
+  );
 }
 
 ProductReport _legacyReport({

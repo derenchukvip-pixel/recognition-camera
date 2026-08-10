@@ -79,4 +79,31 @@ class ProvenanceClaim {
   bool get hasValue => value != null && value!.trim().isNotEmpty;
 
   String get displayValue => hasValue ? value!.trim() : 'Not disclosed';
+
+  Map<String, dynamic> toJson() => {
+        'value': value,
+        'provenance': provenance.name,
+        'source': source,
+        'caveat': caveat,
+      };
+
+  /// Reads a stored claim back.
+  ///
+  /// An unrecognised badge name resolves to [Provenance.unknown] rather than
+  /// throwing or defaulting to something friendlier. If a future version
+  /// writes a badge this build has never heard of, the safe reading is "we
+  /// don't know how much to trust this" — every other default would promote
+  /// an unreadable record to a claim.
+  factory ProvenanceClaim.fromJson(Map<String, dynamic> json) {
+    final name = json['provenance'] as String?;
+    return ProvenanceClaim(
+      value: json['value'] as String?,
+      provenance: Provenance.values.firstWhere(
+        (p) => p.name == name,
+        orElse: () => Provenance.unknown,
+      ),
+      source: json['source'] as String?,
+      caveat: json['caveat'] as String?,
+    );
+  }
 }
