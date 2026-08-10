@@ -193,11 +193,10 @@ def render_report(summary: Dict, meta: Dict) -> str:
 
     lines += [
         "",
-        "The brand column compares the backend's answer to the brand printed "
-        "on the pack. While the backend prompt asks for the brand *owner* "
-        "instead, that column measures the wrong thing and must not be "
-        "quoted — see eval/README.md, 'The metric that had to be thrown "
-        "away'.",
+        "The brand column compares against the Open Food Facts `brands` "
+        "field, which mostly holds the brand printed on the pack but "
+        "sometimes holds the parent company instead. Brand errors are "
+        "therefore an upper bound — see eval/README.md.",
         "",
         f"Cache hits: {summary['cache_hits']} of {total}. "
         "A cache hit means the model did not run for that item.",
