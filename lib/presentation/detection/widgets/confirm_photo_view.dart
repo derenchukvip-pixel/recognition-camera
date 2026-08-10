@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../design/buttons.dart';
@@ -17,14 +15,21 @@ import '../detection_view_model.dart';
 class ConfirmPhotoView extends StatelessWidget {
   const ConfirmPhotoView({
     super.key,
-    required this.imageFile,
+    required this.imageBuilder,
     required this.onConfirm,
     required this.onRetake,
     this.frameCheck = FrameCheck.none,
     this.frameSummary,
   });
 
-  final File imageFile;
+  /// Renders the photo about to be analysed.
+  ///
+  /// A builder rather than a `File`, so this screen — the one that carries
+  /// the frame-check copy — can be rendered in the web preview and reviewed
+  /// without a device. Same reason [ProductReportView] and [ScanListCard]
+  /// take one.
+  final WidgetBuilder imageBuilder;
+
   final VoidCallback onConfirm;
   final VoidCallback onRetake;
 
@@ -45,7 +50,6 @@ class ConfirmPhotoView extends StatelessWidget {
               'A readable label and a straight angle are most of the accuracy.',
               style: AppText.caption,
             ),
-
             const SizedBox(height: AppSpacing.md),
             Expanded(
               child: Center(
@@ -53,7 +57,7 @@ class ConfirmPhotoView extends StatelessWidget {
                   borderRadius: AppRadius.cardRadius,
                   child: AspectRatio(
                     aspectRatio: 3 / 4,
-                    child: Image.file(imageFile, fit: BoxFit.cover),
+                    child: imageBuilder(context),
                   ),
                 ),
               ),

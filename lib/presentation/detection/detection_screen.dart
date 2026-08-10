@@ -346,7 +346,7 @@ class _ScanTab extends StatelessWidget {
 
     if (viewModel.isAwaitingConfirmation && imageFile != null) {
       return ConfirmPhotoView(
-        imageFile: imageFile,
+        imageBuilder: (_) => Image.file(imageFile, fit: BoxFit.cover),
         onConfirm: onConfirm,
         onRetake: onRetake,
         frameCheck: viewModel.frameCheck,

@@ -7,6 +7,8 @@ import 'presentation/common/scan_list_card.dart';
 import 'presentation/common/tab_scaffold.dart';
 import 'presentation/design/empty_state.dart';
 import 'presentation/design/tokens.dart';
+import 'presentation/detection/detection_view_model.dart';
+import 'presentation/detection/widgets/confirm_photo_view.dart';
 import 'presentation/detection/widgets/detection_nav_bar.dart';
 import 'presentation/detection/widgets/scan_home_view.dart';
 import 'presentation/report/product_report_view.dart';
@@ -68,6 +70,11 @@ class PreviewGallery extends StatefulWidget {
 class _PreviewGalleryState extends State<PreviewGallery> {
   static final List<_Screen> _screens = [
     _Screen(slug: 'scan', label: 'Scan', build: (_) => const _ScanPreview()),
+    _Screen(
+      slug: 'confirm',
+      label: 'Frame check',
+      build: (_) => const _ConfirmPreview(),
+    ),
     _Screen(
       slug: 'verified',
       label: 'Barcode result',
@@ -258,6 +265,34 @@ class _ScanPreviewState extends State<_ScanPreview> {
         ),
       ),
       bottomNavigationBar: DetectionNavBar(currentIndex: 0, onTap: (_) {}),
+    );
+  }
+}
+
+/// The step between the shutter and the upload.
+///
+/// Shown here because it is the only screen where the on-device model speaks,
+/// and because the sentence under the result is the one that keeps an object
+/// category from being read as an identification.
+class _ConfirmPreview extends StatelessWidget {
+  const _ConfirmPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.surfaceSubtle,
+      body: ConfirmPhotoView(
+        imageBuilder: (_) => Image.asset(
+          'assets/preview/sample-product.jpg',
+          fit: BoxFit.cover,
+        ),
+        onConfirm: () {},
+        onRetake: () {},
+        frameCheck: FrameCheck.found,
+        // What YOLOv8n actually returns for this photograph's class of
+        // object. A category, which is all it has.
+        frameSummary: 'Potted plant in frame',
+      ),
     );
   }
 }

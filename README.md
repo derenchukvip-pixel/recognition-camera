@@ -17,7 +17,8 @@ gate before the first frame is captured.
 > Dart source.
 
 **▶ [Try it in your browser](https://derenchukvip-pixel.github.io/recognition-camera/)**
-— seven screens, switchable, running against fixtures. Deep links:
+— eight screens, switchable, running against fixtures. Deep links:
+[`?screen=confirm`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=confirm) ·
 [`?screen=history`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=history) ·
 [`?screen=unreadable`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=unreadable) ·
 [`?screen=consent`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=consent)
@@ -30,16 +31,21 @@ screenshot below is captured headlessly from that same build.
 
 ## Screenshots
 
-| Scan | Barcode result — verified | Photo result — estimated |
+| Scan | Frame check — on device | Barcode result — verified |
 |---|---|---|
-| ![Scan](docs/screenshots/scan.png) | ![Verified](docs/screenshots/report-verified.png) | ![Photo scan](docs/screenshots/report-photo-scan.png) |
+| ![Scan](docs/screenshots/scan.png) | ![Frame check](docs/screenshots/frame-check.png) | ![Verified](docs/screenshots/report-verified.png) |
 
-| Unreadable barcode | History | Consent gate |
+| Photo result — estimated | Unreadable barcode | History |
 |---|---|---|
-| ![Unreadable](docs/screenshots/report-unreadable.png) | ![History](docs/screenshots/history.png) | ![Consent](docs/screenshots/consent.png) |
+| ![Photo scan](docs/screenshots/report-photo-scan.png) | ![Unreadable](docs/screenshots/report-unreadable.png) | ![History](docs/screenshots/history.png) |
 
 **Scan** states what each mode's answer is worth before the scan rather than after it: a
 photo yields an estimate, a barcode yields a lookup that repeats.
+
+**Frame check** is the on-device model, run before anything is uploaded. It found a potted
+plant, which is a COCO category and not a product — and the line under it says so, because
+"Potted plant in frame" sitting above this app's badges would otherwise read as an
+identification.
 
 **Verified** — the country comes from the barcode, so it is attributed to the GS1 prefix it
 was read from, with the caveat that this is where the brand *registered*, not where the
