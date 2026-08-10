@@ -1,41 +1,75 @@
 # Recognition Camera
 
-A Flutter app that identifies what the camera is pointed at — **entirely on the device**.
-Point it at an object and a YOLOv8 model running locally returns labelled bounding boxes;
-scan a barcode and it pulls the product record from Open Food Facts. No image ever leaves the
-phone for the on-device path, and the app stays useful with the network switched off.
+A Flutter app that tells you what a product is — and how much of that it can actually back up.
+
+Three sources, and the app never confuses them. A **barcode** decodes offline to a GS1
+member country, check digit first, and that answer repeats. A **photograph** goes to a vision
+model, which guesses. A **YOLOv8 model on the phone** checks the frame before anything is
+uploaded, so a badly-framed shot is caught while the user can still retake it. Every claim
+on screen carries which of these it came from.
 
 Built as a portfolio piece to show what an AI feature looks like when it is engineered rather
-than demoed: a real inference pipeline with hand-written post-processing, a typed error
-taxonomy, TTL caching, and an explicit consent gate before the first frame is captured.
+than demoed: hand-written tensor post-processing, a provenance model that cannot be bypassed,
+an accuracy figure that was **measured and published rather than asserted**, and a consent
+gate before the first frame is captured.
 
 > **One codebase, both platforms.** Everything here builds for iOS and Android from the same
 > Dart source.
 
-**▶ [Try the result screen in your browser](https://derenchukvip-pixel.github.io/recognition-camera/)**
-— three states, switchable: a verified barcode scan, a photo-only scan, and a barcode that
-fails its check digit. Deep links: [`?fixture=unreadable`](https://derenchukvip-pixel.github.io/recognition-camera/?fixture=unreadable)
+**▶ [Try it in your browser](https://derenchukvip-pixel.github.io/recognition-camera/)**
+— nine screens, switchable, running against fixtures. Deep links:
+[`?screen=confirm`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=confirm) ·
+[`?screen=share`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=share) ·
+[`?screen=history`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=history) ·
+[`?screen=unreadable`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=unreadable) ·
+[`?screen=consent`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=consent)
 
 The full app cannot run on the web — `tflite_flutter`, `camera` and `mobile_scanner` are
-platform plugins with no web implementation. The result screen can, because it takes a
-plain `ProductReport` and nothing else.
+platform plugins with no web implementation, and the records live in Hive. The screens can,
+because each takes plain data and callbacks and reaches for nothing else. That separation is
+not a trick for the demo: it is what lets the design be reviewed without a device, and every
+screenshot below is captured headlessly from that same build.
 
 ## Screenshots
 
-| Barcode scan — verified | Photo scan — estimated | Unreadable barcode |
+| Scan | Frame check — on device | Barcode result — verified |
 |---|---|---|
-| ![Verified](docs/screenshots/report-verified.png) | ![Photo scan](docs/screenshots/report-photo-scan.png) | ![Unreadable](docs/screenshots/report-unreadable.png) |
+| ![Scan](docs/screenshots/scan.png) | ![Frame check](docs/screenshots/frame-check.png) | ![Verified](docs/screenshots/report-verified.png) |
 
-Left: the country comes from the barcode, so it is marked Verified and attributed to the
-GS1 prefix it was read from — with the caveat that this is where the brand *registered*,
-not where the goods were made.
+| Photo result — estimated | Unreadable barcode | History |
+|---|---|---|
+| ![Photo scan](docs/screenshots/report-photo-scan.png) | ![Unreadable](docs/screenshots/report-unreadable.png) | ![History](docs/screenshots/history.png) |
 
-Middle: recognition from a photo only. The headquarters claim is Estimated rather than
-Verified because it is derived from a brand that was itself only recognised from an image —
-a claim never outranks the claim it rests on.
+| Shared image | Consent gate | Nothing saved |
+|---|---|---|
+| ![Shared image](docs/screenshots/shared-image.png) | ![Consent](docs/screenshots/consent.png) | ![Empty](docs/screenshots/saved-empty.png) |
 
-Right: the barcode fails its check digit, so nothing earns a Verified badge. An earlier
-build would have reported a confident, wrong country here.
+**Scan** states what each mode's answer is worth before the scan rather than after it: a
+photo yields an estimate, a barcode yields a lookup that repeats.
+
+**Frame check** is the on-device model, run before anything is uploaded. It found a potted
+plant, which is a COCO category and not a product — and the line under it says so, because
+"Potted plant in frame" sitting above this app's badges would otherwise read as an
+identification.
+
+**Verified** — the country comes from the barcode, so it is attributed to the GS1 prefix it
+was read from, with the caveat that this is where the brand *registered*, not where the
+goods were made.
+
+**Estimated** — recognition from a photo only. The headquarters claim is Estimated rather
+than Verified because it is derived from a brand that was itself only recognised from an
+image; a claim never outranks the claim it rests on.
+
+**Unreadable** — the barcode fails its check digit, so nothing earns a Verified badge. An
+earlier build reported a confident, wrong country here.
+
+**History** — the badge is in the list, not only on the detail screen. A reproducible
+barcode reading and a model's guess are distinguishable without opening either row.
+
+**Shared image** is what leaves the app when a result is shared, and the legend is in it.
+A screenshot loses whatever scrolled off, and what scrolls off first is how to read the
+badges — leaving a country name under a green tick arriving in a chat as *the app said
+Denmark*.
 
 ## Contents
 
@@ -53,13 +87,14 @@ build would have reported a confident, wrong country here.
 
 | Capability | How |
 |---|---|
-| Object recognition, offline | YOLOv8n via TensorFlow Lite, bundled as an asset |
+| Frame check, offline | YOLOv8n via TensorFlow Lite, bundled as an asset. Says whether the photo holds a recognisable object *before* it is uploaded |
 | Barcode scanning | `mobile_scanner`, feeding a GS1 prefix decode and an Open Food Facts lookup |
 | Product information | Open Food Facts REST API, TTL-cached |
 | Measured accuracy | An eval harness over 50 openly-licensed products — see [Measured accuracy](#measured-accuracy) |
 | Cloud recognition (optional) | Multipart upload to a FastAPI backend, behind an interface |
 | History & saved items | Hive, survives restarts |
-| Origin preferences | User-set preferences persisted locally |
+| Origin preferences | Countries you want flagged, matched against a result's claims — and marked as a match against your settings, never as a verification |
+| Share a result | Rendered to a PNG with the badge legend inside it, then handed to the system share sheet |
 | First-run consent | Explicit disclaimer acceptance before the camera opens |
 
 Seven screens: splash, consent gate, scan (photo or barcode), camera capture, barcode
@@ -106,28 +141,33 @@ and is not are in **[eval/README.md](eval/README.md)**.
 
 ```
               presentation/                    ← screens + ChangeNotifier view models
-     camera · detection · barcode · product
+     detection · camera · barcode · report
      history · saved · preferences · terms
                      |
                      v
-                domain/models/                 ← RecognitionResult, HistoryItem, SavedProduct
+                domain/                        ← ProductReport, ProvenanceClaim, Detection
+       every claim carries where it came from
                      |
         +------------+-------------+
         |                          |
         v                          v
    data/ai/                    data/recognition/
-   OnDeviceAIService           RecognitionApi  (interface)
+   ObjectDetector (interface)  RecognitionApi  (interface)
+        |                          |
+        v                          v
+   OnDeviceAIService           RecognitionApiDio  (Dio + multipart)
    - TFLite interpreter             |
    - YOLOv8n, 640x640               v
-   - hand-written NMS + IoU    RecognitionApiDio  (Dio + multipart)
-        |                          |
-        |                          v
         |                     core/error/AppError
-        |                     mapToUserMessage(...)
-        v                          |
-   runs fully offline              v
-                            user-facing message
-                            (never a raw DioException)
+        v                     mapToUserMessage(...)
+   yolo_postprocess.dart            |
+   - decode [1,84,8400]             v
+   - NMS over IoU              user-facing message
+   - no interpreter, so        (never a raw DioException)
+     it is unit-testable
+        |
+        v
+   "bottle in frame" — a category, never a product
 
    core/cache/SimpleCache<T>   ← generic TTL cache, used for product lookups
    core/cache/HistoryStorage   ← Hive-backed, survives restarts
@@ -140,13 +180,22 @@ implementation. That is what makes the view model testable without a server — 
 
 ## Why it's built this way
 
-**On-device first, cloud as an option — not the other way round.** The obvious way to build
-this is to POST every frame to a server and let a GPU do the work. That gives you a demo, and
-a product that is useless in a supermarket basement, costs money per photo, and ships every
-user's camera roll to a third party. Here the YOLOv8n model is bundled as an asset and runs
-through `tflite_flutter` locally; `RecognitionApiDio` exists for the cases where a heavier
-cloud model is genuinely worth it, but it sits behind the `RecognitionApi` interface so the
-offline path is never load-bearing on a network call.
+**The on-device model is used for what it can actually do.** YOLOv8n detects the 80 COCO
+categories. It can say there is a bottle in the frame; it can never say *which* bottle,
+because COCO has no notion of a brand. An earlier version of this README claimed the app
+"identifies what the camera is pointed at entirely on the device", which was wrong twice
+over — the identification is a cloud call, and the on-device code had drifted out of the
+navigation entirely and was reachable from no screen at all.
+
+So it does the job it is good at. Before a photo is uploaded, the model runs locally and
+reports whether the frame holds a recognisable object. That catches a blurred or badly-aimed
+shot at the moment the user can still retake it, costs no network, and sends nothing
+anywhere. The screen showing it says in as many words that a category is not a product — a
+detector that answers "bottle" next to a Verified badge would be laundering an object class
+into an identification.
+
+It is an aid, not a gate: a detector that fails to load leaves the screen silent rather than
+blocking the scan or blaming the user's framing for a model that never started.
 
 **The post-processing is written out, not imported.** A TFLite interpreter hands back a raw
 `[1, 84, 8400]` tensor — 8400 candidate boxes, each with 80 class scores and 4 geometry values.
@@ -154,8 +203,17 @@ Turning that into "there is a laptop here" is the actual work: transposing the l
 by confidence, converting `[cx, cy, w, h]` to corner coordinates, rescaling from the 640×640
 letterbox back to source-image pixels, then running **Non-Maximum Suppression** over an
 **IoU** computation to collapse the dozen overlapping boxes the model emits for one object.
-All of that is in `OnDeviceAIService` as readable Dart rather than hidden behind a helper
-package, because when the model is swapped this is the code that has to change.
+All of that is in `data/ai/yolo_postprocess.dart` as readable Dart rather than hidden behind
+a helper package, because when the model is swapped this is the code that has to change.
+
+It sits apart from the interpreter so it can be tested without a 6 MB model file and a native
+delegate — and pulling it out immediately paid for itself. The IoU function read `[x, y, w, h]`
+as if `x, y` were the box centre and subtracted half the width again, but the decode step had
+already converted centre to corner. Two boxes were each shifted by half of *their own* size
+before being compared, so the overlap of two differently-sized boxes was measured between
+rectangles neither of them occupied. Equal-size boxes cancelled the error exactly, which is
+why it survived: the duplicates NMS usually sees are near-identical. There is now a test for
+a small box inside a large one, which is the case that fails.
 
 **Every failure has a sentence a user can act on.** `mapToUserMessage` in `core/error/app_error.dart`
 covers each `DioExceptionType` explicitly — timeout, connection error, bad certificate, 4xx,
@@ -267,7 +325,7 @@ flutter build ios --release          # iOS
 
 ```bash
 flutter analyze                          # No issues found!
-flutter test                             # 67 tests
+flutter test                             # 108 tests
 python3 -m unittest discover -s server   # 25 tests
 python3 -m unittest discover -s eval     # 17 tests
 ```
@@ -282,6 +340,10 @@ Verified on Flutter 3.44.9 / Dart 3.12.2.
 | `scan_result_screen_test.dart` | The result screen, fed the exact backend response, asserted on what a user reads |
 | `scan_list_card_test.dart` | A list row shows how much of it was verified before it is opened |
 | `scan_home_view_test.dart` | The scan-mode switch, and that the visible action is the one that runs |
+| `yolo_postprocess_test.dart` | The tensor decode, NMS and IoU, including the box-inside-a-box case that exposed a real bug |
+| `frame_check_test.dart` | The offline frame check: what it reports, that a stale result cannot overwrite a newer photo, and that a broken detector stays silent |
+| `origin_match_test.dart` | Matching a claim against the user's lists, and that a match is never rendered as a verification |
+| `share_card_test.dart` | The shared image carries the legend, carries no photo, and wears no badge it did not earn |
 | `gs1_prefixes_test.dart` | Prefix table, check digits, special-use ranges |
 | `saved_products_storage_test.dart` | Persistence round-trip, including that badges survive it |
 | `recognition_result_test.dart` | Parsing the backend envelope |

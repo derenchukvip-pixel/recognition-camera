@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/product_report.dart';
+import '../../domain/origin_match.dart';
 import '../../domain/provenance.dart';
+import '../design/origin_match_note.dart';
 import '../design/provenance_badge.dart';
 import '../design/tokens.dart';
 
@@ -28,6 +30,8 @@ class ProductReportView extends StatelessWidget {
     this.onClose,
     this.onSave,
     this.isSaved = false,
+    this.onShare,
+    this.originMatcher,
   });
 
   final ProductReport report;
@@ -41,6 +45,21 @@ class ProductReportView extends StatelessWidget {
   final VoidCallback? onSave;
 
   final bool isSaved;
+
+  /// Renders the result as an image and hands it to the system share sheet.
+  /// Null while one is already being prepared, which disables the button
+  /// without removing it.
+  final VoidCallback? onShare;
+
+  /// Resolves a country claim against the user's own lists.
+  ///
+  /// A callback rather than a view model, so this widget keeps taking a
+  /// [ProductReport] and nothing else — the web preview passes a fixture
+  /// matcher, the app passes one reading live preferences, and neither knows
+  /// about the other. Null switches the feature off, which is what the
+  /// shared image does: the recipient's copy must not carry the sender's
+  /// settings.
+  final OriginMatch Function(ProvenanceClaim claim)? originMatcher;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +81,12 @@ class ProductReportView extends StatelessWidget {
                     tooltip: 'Close',
                   ),
             actions: [
+              if (onShare != null)
+                IconButton(
+                  onPressed: onShare,
+                  icon: const Icon(Icons.ios_share, color: AppColors.ink),
+                  tooltip: 'Share',
+                ),
               if (onSave != null)
                 IconButton(
                   onPressed: onSave,
@@ -114,14 +139,17 @@ class ProductReportView extends StatelessWidget {
                       _ClaimRow(
                         label: 'Brand registered in',
                         claim: report.registeredIn,
+                        matcher: originMatcher,
                       ),
                       _ClaimRow(
                         label: 'Manufactured in',
                         claim: report.manufacturedIn,
+                        matcher: originMatcher,
                       ),
                       _ClaimRow(
                         label: 'Headquarters',
                         claim: report.headquarters,
+                        matcher: originMatcher,
                       ),
                       // Only when the reading actually covered it. A barcode
                       // lookup says nothing about tax residency, and an
@@ -132,11 +160,15 @@ class ProductReportView extends StatelessWidget {
                         _ClaimRow(
                           label: 'Profit booked in',
                           claim: report.taxJurisdiction!,
+                          matcher: originMatcher,
                         ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  const _MethodologyNote(key: provenanceLegendKey),
+                  _MethodologyNote(
+                    key: provenanceLegendKey,
+                    originMatcher: originMatcher,
+                  ),
                 ],
               ),
             ),
@@ -304,10 +336,15 @@ class _ClaimCard extends StatelessWidget {
 }
 
 class _ClaimRow extends StatelessWidget {
-  const _ClaimRow({required this.label, required this.claim});
+  const _ClaimRow({
+    required this.label,
+    required this.claim,
+    this.matcher,
+  });
 
   final String label;
   final ProvenanceClaim claim;
+  final OriginMatch Function(ProvenanceClaim claim)? matcher;
 
   @override
   Widget build(BuildContext context) {
@@ -360,6 +397,7 @@ class _ClaimRow extends StatelessWidget {
               child: Text(claim.caveat!, style: AppText.caption),
             ),
           ],
+          if (matcher != null) OriginMatchNote(match: matcher!(claim)),
         ],
       ),
     );
@@ -367,7 +405,10 @@ class _ClaimRow extends StatelessWidget {
 }
 
 class _MethodologyNote extends StatelessWidget {
-  const _MethodologyNote({super.key});
+  const _MethodologyNote({super.key, this.originMatcher});
+
+  /// Only to decide whether the preference paragraph belongs here at all.
+  final Object? originMatcher;
 
   @override
   Widget build(BuildContext context) {
@@ -394,6 +435,34 @@ class _MethodologyNote extends StatelessWidget {
             ),
             if (p != Provenance.values.last)
               const SizedBox(height: AppSpacing.sm),
+          ],
+          // Said here as well as on each marked row, because the two kinds of
+          // annotation on this screen answer different questions and the one
+          // that is easiest to misread is the preference mark.
+          if (originMatcher != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            const Divider(height: 1, thickness: 1, color: AppColors.border),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.push_pin_outlined,
+                  size: 16,
+                  color: AppColors.brand,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                const Expanded(
+                  child: Text(
+                    'A pin or a flag means the country is on one of your own '
+                    'lists in Preferences. That is a match against your '
+                    'settings, decided separately from the badges above and '
+                    'never a check of whether the country is right.',
+                    style: AppText.caption,
+                  ),
+                ),
+              ],
+            ),
           ],
         ],
       ),

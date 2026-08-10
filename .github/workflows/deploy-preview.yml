@@ -1,12 +1,14 @@
 name: Deploy UI preview to GitHub Pages
 
 # The app itself cannot run on the web — tflite_flutter, camera and
-# mobile_scanner are platform plugins with no web implementation. What deploys
-# here is `lib/main_preview.dart`: the result screen rendered against fixtures.
-# It takes a plain ProductReport and nothing else, so it renders anywhere.
+# mobile_scanner are platform plugins with no web implementation, and the
+# stored records live in Hive. What deploys here is `lib/main_preview.dart`:
+# every screen rendered against fixtures. Each one takes plain data and
+# callbacks and reaches for nothing else, so each renders anywhere.
 #
 # The point is a link a client can open in 30 seconds instead of cloning a repo
-# and building an APK.
+# and building an APK. The README screenshots come from this same build, so the
+# two cannot drift apart.
 
 on:
   push:

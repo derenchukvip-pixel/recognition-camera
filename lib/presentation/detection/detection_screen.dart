@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/error/app_error.dart';
+import '../../data/ai/on_device_ai_service.dart';
 import '../../data/open_food_facts/open_food_facts_api.dart';
 import '../../data/recognition/recognition_api_dio.dart';
 import '../../domain/models/product_report.dart';
@@ -17,7 +18,7 @@ import '../history/history_tab.dart';
 import '../history/history_view_model.dart';
 import '../preferences/origin_preferences_tab.dart';
 import '../preferences/origin_preferences_view_model.dart';
-import '../report/product_report_view.dart';
+import '../report/report_screen.dart';
 import '../report/scan_result_screen.dart';
 import '../saved/saved_products_view_model.dart';
 import '../saved/saved_tab.dart';
@@ -37,16 +38,24 @@ class DetectionScreen extends StatefulWidget {
 
 class _DetectionScreenState extends State<DetectionScreen> {
   late final DetectionViewModel _viewModel;
+  final OnDeviceAIService _detector = OnDeviceAIService();
 
   @override
   void initState() {
     super.initState();
-    _viewModel = DetectionViewModel(recognitionApi: RecognitionApiDio());
+    _viewModel = DetectionViewModel(
+      recognitionApi: RecognitionApiDio(),
+      // The offline half of the pipeline. It looks at the photograph before
+      // anything leaves the phone and says whether there is a recognisable
+      // object in it at all.
+      objectDetector: _detector,
+    );
   }
 
   @override
   void dispose() {
     _viewModel.dispose();
+    _detector.dispose();
     super.dispose();
   }
 
@@ -118,6 +127,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
     final viewModel = context.read<DetectionViewModel>();
     final historyViewModel = context.read<HistoryViewModel>();
     final savedViewModel = context.read<SavedProductsViewModel>();
+    final preferencesViewModel = context.read<OriginPreferencesViewModel>();
     final navigator = Navigator.of(context);
 
     await viewModel.confirmAnalysis();
@@ -147,6 +157,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
           // by the tabs and must outlive this route.
           providers: [
             ChangeNotifierProvider.value(value: savedViewModel),
+            ChangeNotifierProvider.value(value: preferencesViewModel),
           ],
           child: ScanResultScreen(
             report: report,
@@ -175,6 +186,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
     final navigator = Navigator.of(context);
     final historyViewModel = context.read<HistoryViewModel>();
     final savedViewModel = context.read<SavedProductsViewModel>();
+    final preferencesViewModel = context.read<OriginPreferencesViewModel>();
 
     final barcode = await navigator.push<String>(
       MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
@@ -217,6 +229,7 @@ class _DetectionHomeState extends State<_DetectionHome> {
         builder: (_) => _BarcodeResultRoute(
           report: report,
           savedViewModel: savedViewModel,
+          preferencesViewModel: preferencesViewModel,
         ),
       ),
     );
@@ -286,21 +299,25 @@ class _BarcodeResultRoute extends StatelessWidget {
   const _BarcodeResultRoute({
     required this.report,
     required this.savedViewModel,
+    required this.preferencesViewModel,
   });
 
   final ProductReport report;
   final SavedProductsViewModel savedViewModel;
+  final OriginPreferencesViewModel preferencesViewModel;
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: savedViewModel,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: savedViewModel),
+        ChangeNotifierProvider.value(value: preferencesViewModel),
+      ],
       child: Consumer<SavedProductsViewModel>(
-        builder: (context, saved, _) => ProductReportView(
+        builder: (context, saved, _) => ReportScreen(
           report: report,
           isSaved: saved.isBarcodeSaved(report.barcode),
           onSave: () => saved.toggleFromResult(report: report),
-          onClose: () => Navigator.of(context).pop(),
         ),
       ),
     );
@@ -337,9 +354,11 @@ class _ScanTab extends StatelessWidget {
 
     if (viewModel.isAwaitingConfirmation && imageFile != null) {
       return ConfirmPhotoView(
-        imageFile: imageFile,
+        imageBuilder: (_) => Image.file(imageFile, fit: BoxFit.cover),
         onConfirm: onConfirm,
         onRetake: onRetake,
+        frameCheck: viewModel.frameCheck,
+        frameSummary: viewModel.frameSummary,
       );
     }
 

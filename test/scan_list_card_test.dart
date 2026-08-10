@@ -10,12 +10,9 @@ Future<void> _pump(WidgetTester tester, ProductReport report) async {
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
-        body: ScanListCard(
-          report: report,
-          imagePath: '',
-          fallbackImagePath: '',
-          onTap: () {},
-        ),
+        // No thumbnail builder: these fixtures have no photo on disk, which
+        // is also the barcode case the card has to draw differently.
+        body: ScanListCard(report: report, onTap: () {}),
       ),
     ),
   );
