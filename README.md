@@ -40,6 +40,7 @@ build would have reported a confident, wrong country here.
 ## Contents
 
 - [What it does](#what-it-does)
+- [Measured accuracy](#measured-accuracy)
 - [Architecture](#architecture)
 - [Why it's built this way](#why-its-built-this-way)
 - [The inference pipeline](#the-inference-pipeline)
@@ -53,15 +54,53 @@ build would have reported a confident, wrong country here.
 | Capability | How |
 |---|---|
 | Object recognition, offline | YOLOv8n via TensorFlow Lite, bundled as an asset |
-| Barcode scanning | `mobile_scanner`, feeding the Open Food Facts lookup |
+| Barcode scanning | `mobile_scanner`, feeding a GS1 prefix decode and an Open Food Facts lookup |
 | Product information | Open Food Facts REST API, TTL-cached |
+| Measured accuracy | An eval harness over 50 openly-licensed products — see [Measured accuracy](#measured-accuracy) |
 | Cloud recognition (optional) | Multipart upload to a FastAPI backend, behind an interface |
 | History & saved items | Hive, survives restarts |
 | Origin preferences | User-set preferences persisted locally |
 | First-run consent | Explicit disclaimer acceptance before the camera opens |
 
-Ten screens: splash, terms, camera capture, live detection, barcode scanner, product info,
-analysis detail, history, saved, preferences.
+Seven screens: splash, consent gate, scan (photo or barcode), camera capture, barcode
+scanner, result, and three tabs — history, saved, preferences.
+
+## Measured accuracy
+
+Everyone building on a vision model writes "AI-powered". Here is how often this one is
+wrong, and the code that produced the number.
+
+Fifty products from Open Food Facts, run end to end through the deployed backend and scored
+against the reference labels. Latest run, `gpt-5.6-terra`, 2026-08-10:
+
+| Outcome | Product name | Brand |
+|---|---|---|
+| Correct | 29 (58%) | 37 (74%) |
+| **Wrong, stated as an answer** | 6 (12%) | 6 (12%) |
+| Partly right — not scored either way | 11 (22%) | 0 |
+| Abstained — "Not identified" | 4 (8%) | 7 (14%) |
+
+```bash
+python3 eval/run_eval.py     # standard library only, nothing to install
+```
+
+**Not one of those confident errors reaches a user as a fact.** Everything the photo path
+produces is rendered `ESTIMATED`, and a test fails if a claim on that path is ever marked
+`VERIFIED`. That is the provenance model expressed as a number instead of as a principle.
+
+Two things about the harness are worth more than the figures. It reports **four outcomes,
+not two** — a matcher forced to call every answer right or wrong pushes marginal cases into
+whichever bucket its author preferred, so the eleven partly-right rows are counted as
+neither. And **abstention is not an error**: a system that is right 58% of the time and
+silent otherwise is worth more than one right 70% of the time that invents the rest.
+Removing the backend prompt's instruction to "never leave any section empty" moved confident
+errors from 16% to 12%, and the errors that disappeared became silence rather than correct
+answers.
+
+The first version of the brand metric reported 30% errors and was thrown away before
+publication: thirteen of the fifteen were the model naming the parent company correctly
+while the reference held the on-pack brand. The audit, the rows, and what this dataset is
+and is not are in **[eval/README.md](eval/README.md)**.
 
 ## Architecture
 
@@ -171,10 +210,20 @@ worth the round trip: **FastAPI, ~500 lines**, deployed on Railway.
 It is not a thin proxy. Most of it is the work of turning a vision model's prose into
 fields worth showing — rejecting answers where the model returned a generic category word
 instead of a brand, or echoed the product name back as the manufacturer, or replied with
-an apology. The app's on-device path stays fully functional when this service is
+an apology. That filtering lives in `server/answers.py` with 25 tests, none of which need
+an API key. The app's on-device path stays fully functional when this service is
 unreachable, which is the whole reason it sits behind the `RecognitionApi` interface.
 
-The `OPENAI_API_KEY` is read from the environment; nothing secret is in the repository.
+**The prompt is the part that mattered most.** An earlier version required percentages
+("Always include percentages") and forbade silence ("Never leave any section empty"), which
+is how the same LEGO box produced "Czech Republic 70%, Hungary 30%" on one scan and
+different figures on the next. It now asks for country names or nothing, and tells the model
+that "Not identified" is a valid answer for any field. The eval above is what that change
+is worth.
+
+`OPENAI_MODEL` selects the model and both `/analyze/` and `/health` report it, so an eval run
+records what produced its numbers. The `OPENAI_API_KEY` is read from the environment; nothing
+secret is in the repository.
 
 ## Tech stack
 
@@ -182,7 +231,11 @@ The `OPENAI_API_KEY` is read from the environment; nothing secret is in the repo
 `camera` · `mobile_scanner` · `image` for pre-processing · `dio` · `provider` · `hive` ·
 `shared_preferences` · `flutter_localizations`
 
-**Backend** Python · FastAPI · OpenAI vision · Docker · Railway
+**Backend** Python · FastAPI · OpenAI Responses API · Redis (exact and perceptual-hash
+caching) · Railway
+
+**Evaluation** Python standard library only — no dependency to install before reproducing
+the accuracy figures
 
 ## Running it
 
@@ -213,21 +266,31 @@ flutter build ios --release          # iOS
 ## Tests
 
 ```bash
-flutter analyze   # No issues found!
-flutter test      # 8 tests, all passing
+flutter analyze                          # No issues found!
+flutter test                             # 67 tests
+python3 -m unittest discover -s server   # 25 tests
+python3 -m unittest discover -s eval     # 17 tests
 ```
 
 Verified on Flutter 3.44.9 / Dart 3.12.2.
 
 | File | What it covers |
 |---|---|
-| `detection_view_model_test.dart` | Analysis flow drives status → success, populates result and timing, leaves `errorMessage` null. Uses a `FakeRecognitionApi`, so no server is involved |
-| `recognition_result_test.dart` | Parsing of the backend response envelope, including the raw-string and JSON-map shapes |
-| `saved_products_storage_test.dart` | Persistence round-trip for saved products |
-| `widget_test.dart` | App boots and renders |
+| `report_from_recognition_test.dart` | The live photo path. Invented percentages are stripped, nothing from a photo is ever Verified, and a percentage that belongs to the product name survives |
+| `report_from_barcode_test.dart` | The barcode path. A failed check digit earns no Verified badge anywhere; a barcode absent from Open Food Facts still produces a report from the prefix alone |
+| `report_from_history_test.dart` | Recovering stored records, including rows written before provenance was kept |
+| `scan_result_screen_test.dart` | The result screen, fed the exact backend response, asserted on what a user reads |
+| `scan_list_card_test.dart` | A list row shows how much of it was verified before it is opened |
+| `scan_home_view_test.dart` | The scan-mode switch, and that the visible action is the one that runs |
+| `gs1_prefixes_test.dart` | Prefix table, check digits, special-use ranges |
+| `saved_products_storage_test.dart` | Persistence round-trip, including that badges survive it |
+| `recognition_result_test.dart` | Parsing the backend envelope |
+| `detection_view_model_test.dart` | Analysis flow against a `FakeRecognitionApi`, so no server is involved |
+| `widget_test.dart` | Boot, and that the consent gate still states its three limits |
 
-`RecognitionApi` being an interface is what makes the first of these possible: the view model
-is exercised against a fake, so the test is fast and deterministic.
+The widget tests exist because the unit tests were not enough once already. The provenance
+model, its adapters and its badges were all covered, and the live scan bypassed every one of
+them — an adapter test proves the mapping is right, not that anything calls it.
 
 ### Context safety
 
