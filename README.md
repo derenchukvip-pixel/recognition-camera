@@ -12,30 +12,44 @@ taxonomy, TTL caching, and an explicit consent gate before the first frame is ca
 > **One codebase, both platforms.** Everything here builds for iOS and Android from the same
 > Dart source.
 
-**▶ [Try the result screen in your browser](https://derenchukvip-pixel.github.io/recognition-camera/)**
-— three states, switchable: a verified barcode scan, a photo-only scan, and a barcode that
-fails its check digit. Deep links: [`?fixture=unreadable`](https://derenchukvip-pixel.github.io/recognition-camera/?fixture=unreadable)
+**▶ [Try it in your browser](https://derenchukvip-pixel.github.io/recognition-camera/)**
+— seven screens, switchable, running against fixtures. Deep links:
+[`?screen=history`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=history) ·
+[`?screen=unreadable`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=unreadable) ·
+[`?screen=consent`](https://derenchukvip-pixel.github.io/recognition-camera/?screen=consent)
 
 The full app cannot run on the web — `tflite_flutter`, `camera` and `mobile_scanner` are
-platform plugins with no web implementation. The result screen can, because it takes a
-plain `ProductReport` and nothing else.
+platform plugins with no web implementation, and the records live in Hive. The screens can,
+because each takes plain data and callbacks and reaches for nothing else. That separation is
+not a trick for the demo: it is what lets the design be reviewed without a device, and every
+screenshot below is captured headlessly from that same build.
 
 ## Screenshots
 
-| Barcode scan — verified | Photo scan — estimated | Unreadable barcode |
+| Scan | Barcode result — verified | Photo result — estimated |
 |---|---|---|
-| ![Verified](docs/screenshots/report-verified.png) | ![Photo scan](docs/screenshots/report-photo-scan.png) | ![Unreadable](docs/screenshots/report-unreadable.png) |
+| ![Scan](docs/screenshots/scan.png) | ![Verified](docs/screenshots/report-verified.png) | ![Photo scan](docs/screenshots/report-photo-scan.png) |
 
-Left: the country comes from the barcode, so it is marked Verified and attributed to the
-GS1 prefix it was read from — with the caveat that this is where the brand *registered*,
-not where the goods were made.
+| Unreadable barcode | History | Consent gate |
+|---|---|---|
+| ![Unreadable](docs/screenshots/report-unreadable.png) | ![History](docs/screenshots/history.png) | ![Consent](docs/screenshots/consent.png) |
 
-Middle: recognition from a photo only. The headquarters claim is Estimated rather than
-Verified because it is derived from a brand that was itself only recognised from an image —
-a claim never outranks the claim it rests on.
+**Scan** states what each mode's answer is worth before the scan rather than after it: a
+photo yields an estimate, a barcode yields a lookup that repeats.
 
-Right: the barcode fails its check digit, so nothing earns a Verified badge. An earlier
-build would have reported a confident, wrong country here.
+**Verified** — the country comes from the barcode, so it is attributed to the GS1 prefix it
+was read from, with the caveat that this is where the brand *registered*, not where the
+goods were made.
+
+**Estimated** — recognition from a photo only. The headquarters claim is Estimated rather
+than Verified because it is derived from a brand that was itself only recognised from an
+image; a claim never outranks the claim it rests on.
+
+**Unreadable** — the barcode fails its check digit, so nothing earns a Verified badge. An
+earlier build reported a confident, wrong country here.
+
+**History** — the badge is in the list, not only on the detail screen. A reproducible
+barcode reading and a model's guess are distinguishable without opening either row.
 
 ## Contents
 

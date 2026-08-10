@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../domain/models/history_item.dart';
 import '../../domain/models/report_from_history.dart';
 import '../common/scan_list_card.dart';
+import '../common/stored_image.dart';
 import '../common/tab_scaffold.dart';
 import '../design/empty_state.dart';
 import '../design/tokens.dart';
@@ -109,8 +108,10 @@ class _HistoryBody extends StatelessWidget {
           background: const _DeleteBackground(),
           child: ScanListCard(
             report: item.toReport(),
-            imagePath: item.imagePath,
-            fallbackImagePath: item.originalImagePath,
+            thumbnailBuilder: storedThumbnailBuilder(
+              item.imagePath,
+              item.originalImagePath,
+            ),
             onTap: () => _open(context, item),
           ),
         );
@@ -123,7 +124,7 @@ class _HistoryBody extends StatelessWidget {
       MaterialPageRoute(
         builder: (routeContext) => ProductReportView(
           report: item.toReport(),
-          imageBuilder: (_) => _storedImage(item.imagePath, item.originalImagePath),
+          imageBuilder: (_) => storedImage(item.imagePath, item.originalImagePath),
           onClose: () => Navigator.of(routeContext).pop(),
         ),
       ),
@@ -148,21 +149,3 @@ class _DeleteBackground extends StatelessWidget {
   }
 }
 
-/// Renders the stored photo, falling back to the pre-processing original when
-/// the annotated copy has been cleaned up by the OS.
-Widget _storedImage(String imagePath, String originalImagePath) {
-  for (final path in [imagePath, originalImagePath]) {
-    if (path.isEmpty) continue;
-    final file = File(path);
-    if (file.existsSync()) return Image.file(file, fit: BoxFit.cover);
-  }
-  return const ColoredBox(
-    color: AppColors.surfaceSubtle,
-    child: Center(
-      child: Icon(
-        Icons.image_not_supported_outlined,
-        color: AppColors.inkMuted,
-      ),
-    ),
-  );
-}

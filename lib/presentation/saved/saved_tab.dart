@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../domain/models/report_from_history.dart';
 import '../../domain/models/saved_product.dart';
 import '../common/scan_list_card.dart';
+import '../common/stored_image.dart';
 import '../common/tab_scaffold.dart';
 import '../design/empty_state.dart';
 import '../design/tokens.dart';
@@ -107,8 +106,10 @@ class _SavedBody extends StatelessWidget {
           background: const _RemoveBackground(),
           child: ScanListCard(
             report: item.toReport(),
-            imagePath: item.imagePath,
-            fallbackImagePath: item.originalImagePath,
+            thumbnailBuilder: storedThumbnailBuilder(
+              item.imagePath,
+              item.originalImagePath,
+            ),
             onTap: () => _open(context, item),
             trailing: IconButton(
               onPressed: () => viewModel.remove(item.id),
@@ -127,7 +128,7 @@ class _SavedBody extends StatelessWidget {
         builder: (routeContext) => ProductReportView(
           report: item.toReport(),
           imageBuilder: (_) =>
-              _storedImage(item.imagePath, item.originalImagePath),
+              storedImage(item.imagePath, item.originalImagePath),
           onClose: () => Navigator.of(routeContext).pop(),
         ),
       ),
@@ -156,19 +157,3 @@ class _RemoveBackground extends StatelessWidget {
   }
 }
 
-Widget _storedImage(String imagePath, String originalImagePath) {
-  for (final path in [imagePath, originalImagePath]) {
-    if (path.isEmpty) continue;
-    final file = File(path);
-    if (file.existsSync()) return Image.file(file, fit: BoxFit.cover);
-  }
-  return const ColoredBox(
-    color: AppColors.surfaceSubtle,
-    child: Center(
-      child: Icon(
-        Icons.image_not_supported_outlined,
-        color: AppColors.inkMuted,
-      ),
-    ),
-  );
-}

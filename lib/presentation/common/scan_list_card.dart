@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../domain/models/product_report.dart';
@@ -21,19 +19,22 @@ class ScanListCard extends StatelessWidget {
   const ScanListCard({
     super.key,
     required this.report,
-    required this.imagePath,
-    required this.fallbackImagePath,
     required this.onTap,
+    this.thumbnailBuilder,
     this.trailing,
   });
 
   final ProductReport report;
-  final String imagePath;
 
-  /// The pre-processing original. The annotated copy is the one that gets
-  /// cleaned up by the OS first, so the row falls back rather than showing a
-  /// broken tile.
-  final String fallbackImagePath;
+  /// Renders the stored photo, or null when there is none to render.
+  ///
+  /// A builder rather than a path, for the same reason [ProductReportView]
+  /// takes one: the phone resolves a `File`, the web preview resolves an
+  /// asset, and a widget that imported `dart:io` to do it itself could not be
+  /// compiled for the preview at all. Deciding *whether* a photo exists is
+  /// the caller's job too — this card only knows what to draw when it does
+  /// not.
+  final WidgetBuilder? thumbnailBuilder;
 
   final VoidCallback onTap;
   final Widget? trailing;
@@ -56,11 +57,7 @@ class ScanListCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _Thumbnail(
-                report: report,
-                imagePath: imagePath,
-                fallbackImagePath: fallbackImagePath,
-              ),
+              _Thumbnail(report: report, builder: thumbnailBuilder),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -110,29 +107,13 @@ String _subtitle(ProductReport report) {
 }
 
 class _Thumbnail extends StatelessWidget {
-  const _Thumbnail({
-    required this.report,
-    required this.imagePath,
-    required this.fallbackImagePath,
-  });
+  const _Thumbnail({required this.report, this.builder});
 
   final ProductReport report;
-  final String imagePath;
-  final String fallbackImagePath;
-
-  File? get _file {
-    for (final path in [imagePath, fallbackImagePath]) {
-      if (path.isEmpty) continue;
-      final file = File(path);
-      if (file.existsSync()) return file;
-    }
-    return null;
-  }
+  final WidgetBuilder? builder;
 
   @override
   Widget build(BuildContext context) {
-    final file = _file;
-
     return ClipRRect(
       borderRadius: const BorderRadius.all(AppRadius.sm),
       child: SizedBox(
@@ -140,8 +121,8 @@ class _Thumbnail extends StatelessWidget {
         height: 56,
         child: ColoredBox(
           color: AppColors.surfaceSubtle,
-          child: file != null
-              ? Image.file(file, fit: BoxFit.cover)
+          child: builder != null
+              ? builder!(context)
               // A barcode scan has no photograph and gets the mark of what it
               // does have. A generic broken-image glyph would read as a
               // missing file rather than as a different kind of scan.
