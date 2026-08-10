@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/error/app_error.dart';
+import '../../data/ai/on_device_ai_service.dart';
 import '../../data/open_food_facts/open_food_facts_api.dart';
 import '../../data/recognition/recognition_api_dio.dart';
 import '../../domain/models/product_report.dart';
@@ -37,16 +38,24 @@ class DetectionScreen extends StatefulWidget {
 
 class _DetectionScreenState extends State<DetectionScreen> {
   late final DetectionViewModel _viewModel;
+  final OnDeviceAIService _detector = OnDeviceAIService();
 
   @override
   void initState() {
     super.initState();
-    _viewModel = DetectionViewModel(recognitionApi: RecognitionApiDio());
+    _viewModel = DetectionViewModel(
+      recognitionApi: RecognitionApiDio(),
+      // The offline half of the pipeline. It looks at the photograph before
+      // anything leaves the phone and says whether there is a recognisable
+      // object in it at all.
+      objectDetector: _detector,
+    );
   }
 
   @override
   void dispose() {
     _viewModel.dispose();
+    _detector.dispose();
     super.dispose();
   }
 
@@ -340,6 +349,8 @@ class _ScanTab extends StatelessWidget {
         imageFile: imageFile,
         onConfirm: onConfirm,
         onRetake: onRetake,
+        frameCheck: viewModel.frameCheck,
+        frameSummary: viewModel.frameSummary,
       );
     }
 
